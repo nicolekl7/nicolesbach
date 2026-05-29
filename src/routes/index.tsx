@@ -149,9 +149,14 @@ function MartiniGlass({ className = "" }: { className?: string }) {
 export default function BachelorettePage() {
   const [user, setUser] = useState<Name | "">("");
   const [claims, setClaims] = useState<Record<string, Claim[]>>(INITIAL_CLAIMS);
-  const [tab, setTab] = useState<"signup" | "who">("signup");
+  const [tab, setTab] = useState<
+    "details" | "itinerary" | "signup" | "who" | "admin"
+  >("details");
   const [noteFor, setNoteFor] = useState<string | null>(null);
   const [noteText, setNoteText] = useState("");
+  const [adminPw, setAdminPw] = useState("");
+  const [adminOk, setAdminOk] = useState(false);
+
 
   const allItems = useMemo(() => SECTIONS.flatMap((s) => s.items), []);
   const finiteItems = useMemo(
