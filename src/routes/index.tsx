@@ -508,9 +508,8 @@ function WhoTab({
   user: Name | "";
 }) {
   const itemsByPerson = useMemo(() => {
-    const map: Record<Name, { label: string; note?: string }[]> = Object.fromEntries(
-      NAMES.map((n) => [n, []]),
-    ) as Record<Name, { label: string; note?: string }[]>;
+    const map = {} as Record<Name, { label: string; note?: string }[]>;
+    for (const n of NAMES) map[n] = [];
     for (const section of SECTIONS) {
       for (const item of section.items) {
         const list = claims[item.id] ?? [];
