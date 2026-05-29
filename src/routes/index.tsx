@@ -371,11 +371,12 @@ function TabBtn({
   return (
     <button
       onClick={onClick}
-      className={`flex-1 rounded-md px-4 py-2.5 text-sm font-medium transition ${
+      className={`flex-1 shrink-0 whitespace-nowrap rounded-md px-3 py-2.5 text-xs font-medium uppercase tracking-wider transition sm:text-sm ${
         active
           ? "bg-[var(--gold)] text-[var(--olive-deep)] shadow-sm"
           : "text-muted-foreground hover:text-foreground"
       }`}
+
     >
       {children}
     </button>
