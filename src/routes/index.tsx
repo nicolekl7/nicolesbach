@@ -265,18 +265,29 @@ export default function BachelorettePage() {
 
       {/* Tabs */}
       <div className="relative z-10 mx-auto max-w-3xl px-5">
-        <div className="flex gap-1 rounded-lg border border-border bg-card/40 p-1">
+        <div className="flex gap-1 overflow-x-auto rounded-lg border border-border bg-card/40 p-1">
+          <TabBtn active={tab === "details"} onClick={() => setTab("details")}>
+            Details
+          </TabBtn>
+          <TabBtn active={tab === "itinerary"} onClick={() => setTab("itinerary")}>
+            Itinerary
+          </TabBtn>
           <TabBtn active={tab === "signup"} onClick={() => setTab("signup")}>
             Item signup
           </TabBtn>
           <TabBtn active={tab === "who"} onClick={() => setTab("who")}>
-            Who's bringing what
+            Who's bringing
+          </TabBtn>
+          <TabBtn active={tab === "admin"} onClick={() => setTab("admin")}>
+            Admin
           </TabBtn>
         </div>
       </div>
 
       <main className="relative z-10 mx-auto max-w-3xl px-5 py-8 pb-24">
-        {tab === "signup" ? (
+        {tab === "details" && <DetailsTab />}
+        {tab === "itinerary" && <ItineraryTab />}
+        {tab === "signup" && (
           <>
             {/* Progress */}
             <div className="mb-10 rounded-lg border border-border bg-card/40 p-5">
@@ -321,10 +332,25 @@ export default function BachelorettePage() {
               </section>
             ))}
           </>
-        ) : (
-          <WhoTab claims={claims} user={user} />
+        )}
+        {tab === "who" && <WhoTab claims={claims} user={user} />}
+        {tab === "admin" && (
+          <AdminTab
+            ok={adminOk}
+            pw={adminPw}
+            setPw={setAdminPw}
+            onSubmit={() => {
+              if (adminPw.trim().toLowerCase() === "nyler") {
+                setAdminOk(true);
+                toast.success("Welcome, admin");
+              } else {
+                toast.error("Wrong password");
+              }
+            }}
+          />
         )}
       </main>
+
 
       <footer className="relative z-10 border-t border-border px-5 py-8 text-center text-xs text-muted-foreground">
         Made with love · cheers to Nicole 🥂
