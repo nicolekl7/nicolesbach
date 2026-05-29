@@ -613,3 +613,312 @@ function WhoTab({
     </div>
   );
 }
+
+// ---------- Details ----------
+
+const CARS: { name: string; people: string; leave: string; arrive: string }[] = [
+  { name: "Car #1", people: "Sabrina, Phoebe, Jane", leave: "9:00 AM", arrive: "2:30 PM" },
+  { name: "Car #2", people: "Lara, Jess, Nicole, p/u Casey", leave: "9:30 AM", arrive: "4:00 PM" },
+  { name: "Car #3", people: "Isabel, Kait, Taylor", leave: "10:00 AM", arrive: "4:00 PM" },
+  { name: "Car #4", people: "Charlene", leave: "1:00 PM", arrive: "4:00 PM" },
+];
+
+function DetailsTab() {
+  const houseAddr = "21 Bellevue St Unit #5, Dewey Beach, DE 19971";
+  return (
+    <div className="space-y-8">
+      <section className="rounded-lg border border-border bg-card/40 p-6">
+        <h2 className="font-display text-3xl text-foreground sm:text-4xl">
+          <em className="text-[var(--gold)]">The house</em>
+        </h2>
+        <dl className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div>
+            <dt className="text-xs uppercase tracking-[0.2em] text-[var(--gold-soft)]">
+              Address
+            </dt>
+            <dd className="mt-1 text-sm text-foreground">{houseAddr}</dd>
+            <a
+              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(houseAddr)}`}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-1 inline-block text-xs text-[var(--gold)] underline-offset-2 hover:underline"
+            >
+              Open in Maps →
+            </a>
+          </div>
+          <div>
+            <dt className="text-xs uppercase tracking-[0.2em] text-[var(--gold-soft)]">
+              Check in
+            </dt>
+            <dd className="mt-1 text-sm text-foreground">
+              Thursday, July 30 · 4:00 PM
+            </dd>
+          </div>
+          <div>
+            <dt className="text-xs uppercase tracking-[0.2em] text-[var(--gold-soft)]">
+              Check out
+            </dt>
+            <dd className="mt-1 text-sm text-foreground">
+              Sunday, August 2 · 10:00 AM
+            </dd>
+          </div>
+        </dl>
+      </section>
+
+      <section className="rounded-lg border border-border bg-card/40 p-6">
+        <h2 className="font-display text-3xl text-foreground sm:text-4xl">
+          <em className="text-[var(--gold)]">The girls</em>
+        </h2>
+        <div className="mt-5 flex flex-wrap gap-2">
+          {NAMES.map((n) => (
+            <span
+              key={n}
+              className="rounded-full border border-border bg-background/30 px-3 py-1.5 text-sm text-foreground"
+            >
+              {n}
+            </span>
+          ))}
+        </div>
+      </section>
+
+      <section className="rounded-lg border border-border bg-card/40 p-6">
+        <h2 className="font-display text-3xl text-foreground sm:text-4xl">
+          <em className="text-[var(--gold)]">Cars & arrivals</em>
+        </h2>
+        <ul className="mt-5 divide-y divide-border">
+          {CARS.map((c) => (
+            <li key={c.name} className="py-4">
+              <div className="flex flex-wrap items-baseline justify-between gap-2">
+                <span className="font-display text-xl italic text-foreground">
+                  {c.name}
+                </span>
+                <span className="text-xs uppercase tracking-[0.2em] text-[var(--gold-soft)]">
+                  Leave {c.leave} · Arrive {c.arrive}
+                </span>
+              </div>
+              <p className="mt-1 text-sm text-muted-foreground">{c.people}</p>
+            </li>
+          ))}
+        </ul>
+      </section>
+    </div>
+  );
+}
+
+// ---------- Itinerary ----------
+
+type ItinDay = {
+  date: string;
+  label: string;
+  blocks: { time: string; what: string }[];
+};
+
+const ITINERARY: ItinDay[] = [
+  {
+    date: "Thu, Jul 30",
+    label: "Thursday",
+    blocks: [
+      { time: "4:00 PM", what: "Official check in" },
+      { time: "5:00 PM", what: "Decorating" },
+      { time: "7:00 PM", what: "Sunset theme · dinner out" },
+    ],
+  },
+  {
+    date: "Fri, Jul 31",
+    label: "Friday",
+    blocks: [
+      { time: "8:00 AM", what: "Pickleball (optional)" },
+      { time: "9:00 AM", what: "Beach day" },
+      { time: "7:00 PM", what: "Glitter theme" },
+      { time: "8:00 PM", what: "Pregame games" },
+      { time: "9:00 PM", what: "Out on the town" },
+    ],
+  },
+  {
+    date: "Sat, Aug 1",
+    label: "Saturday",
+    blocks: [
+      { time: "10:00 AM", what: "Brunch + shops in Rehoboth" },
+      { time: "1:00 PM", what: "Back to bnb · Tini Bikinis boat theme" },
+      { time: "2:30 PM", what: "Walk to boat" },
+      { time: "3:00 PM", what: "Boat" },
+      { time: "6:00 PM", what: "Bonfire" },
+      { time: "9:00 PM", what: "Games & pjs" },
+    ],
+  },
+  {
+    date: "Sun, Aug 2",
+    label: "Sunday",
+    blocks: [
+      { time: "10:00 AM", what: "Checkout · bye-bye brunch" },
+      { time: "12:00 PM", what: "Phoebe / Taylor / Casey need to go" },
+    ],
+  },
+];
+
+function ItineraryTab() {
+  return (
+    <div className="space-y-8">
+      {ITINERARY.map((day) => (
+        <section
+          key={day.date}
+          className="rounded-lg border border-border bg-card/40 p-6"
+        >
+          <div className="flex items-baseline justify-between">
+            <h2 className="font-display text-3xl text-foreground sm:text-4xl">
+              <em className="text-[var(--gold)]">{day.label}</em>
+            </h2>
+            <span className="text-xs uppercase tracking-[0.2em] text-[var(--gold-soft)]">
+              {day.date}
+            </span>
+          </div>
+          <ul className="mt-4 divide-y divide-border">
+            {day.blocks.map((b, i) => (
+              <li key={i} className="flex gap-4 py-3">
+                <span className="w-20 shrink-0 text-sm tabular-nums text-[var(--gold-soft)]">
+                  {b.time}
+                </span>
+                <span className="text-sm text-foreground">{b.what}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))}
+    </div>
+  );
+}
+
+// ---------- Admin ----------
+
+type Expense = {
+  label: string;
+  total: number;
+  payer: string;
+  perPerson: number;
+  splitAmong: Name[];
+  note?: string;
+};
+
+const EXPENSES: Expense[] = [
+  {
+    label: "House",
+    total: 3800,
+    payer: "Sabrina",
+    perPerson: 380,
+    splitAmong: [
+      "Nicole", "Sabrina", "Lara", "Jess", "Isabel",
+      "Kait", "Phoebe", "Jane", "Char", "Casey",
+    ],
+    note: "Split 10 ways (Taylor not included).",
+  },
+  {
+    label: "Boat — Octolounge Kraken",
+    total: 800,
+    payer: "Sabrina",
+    perPerson: 80,
+    splitAmong: [...NAMES],
+    note: "$100 deposit paid 4/7. Split 10 ways.",
+  },
+];
+
+function AdminTab({
+  ok,
+  pw,
+  setPw,
+  onSubmit,
+}: {
+  ok: boolean;
+  pw: string;
+  setPw: (v: string) => void;
+  onSubmit: () => void;
+}) {
+  if (!ok) {
+    return (
+      <div className="mx-auto max-w-sm rounded-lg border border-border bg-card/40 p-6 text-center">
+        <h2 className="font-display text-2xl italic text-foreground">
+          Admin only
+        </h2>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Enter the password to view expenses.
+        </p>
+        <input
+          type="password"
+          value={pw}
+          onChange={(e) => setPw(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") onSubmit();
+          }}
+          placeholder="Password"
+          className="mt-5 w-full rounded-md border border-border bg-background px-4 py-3 text-base text-foreground outline-none focus:border-[var(--gold)]"
+        />
+        <button
+          onClick={onSubmit}
+          className="mt-3 w-full rounded-md bg-[var(--gold)] px-4 py-2.5 text-sm font-medium uppercase tracking-wider text-[var(--olive-deep)]"
+        >
+          Unlock
+        </button>
+      </div>
+    );
+  }
+
+  const totalPerPerson = {} as Record<Name, number>;
+  for (const n of NAMES) totalPerPerson[n] = 0;
+  for (const e of EXPENSES) {
+    for (const n of e.splitAmong) totalPerPerson[n] += e.perPerson;
+  }
+  const grandTotal = EXPENSES.reduce((s, e) => s + e.total, 0);
+
+  return (
+    <div className="space-y-8">
+      <section className="rounded-lg border border-border bg-card/40 p-6">
+        <h2 className="font-display text-3xl text-foreground sm:text-4xl">
+          <em className="text-[var(--gold)]">Expenses</em>
+        </h2>
+        <p className="mt-1 text-xs uppercase tracking-[0.2em] text-[var(--gold-soft)]">
+          Total: ${grandTotal.toLocaleString()}
+        </p>
+        <ul className="mt-5 divide-y divide-border">
+          {EXPENSES.map((e) => (
+            <li key={e.label} className="py-4">
+              <div className="flex flex-wrap items-baseline justify-between gap-2">
+                <span className="font-display text-xl italic text-foreground">
+                  {e.label}
+                </span>
+                <span className="text-sm text-foreground">
+                  ${e.total.toLocaleString()}{" "}
+                  <span className="text-muted-foreground">
+                    · ${e.perPerson}/pp
+                  </span>
+                </span>
+              </div>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Paid by <span className="text-[var(--gold-soft)]">{e.payer}</span>
+                {e.note && <span> · {e.note}</span>}
+              </p>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section className="rounded-lg border border-border bg-card/40 p-6">
+        <h2 className="font-display text-2xl text-foreground sm:text-3xl">
+          <em className="text-[var(--gold)]">Owed to Sabrina</em>
+        </h2>
+        <ul className="mt-4 divide-y divide-border">
+          {NAMES.map((n) => (
+            <li
+              key={n}
+              className="flex items-baseline justify-between py-2.5 text-sm"
+            >
+              <span className="text-foreground">{n}</span>
+              <span className="tabular-nums text-[var(--gold-soft)]">
+                ${totalPerPerson[n].toLocaleString()}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </section>
+    </div>
+  );
+}
+
