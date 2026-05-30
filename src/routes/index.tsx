@@ -520,47 +520,94 @@ function ItemRow({
                 </button>
               )}
               <button
-                onClick={onClaim}
+                onClick={onOpenForm}
                 disabled={!canAddMore}
                 className="rounded-md bg-[var(--gold)] px-3 py-1.5 text-xs font-medium uppercase tracking-wider text-[var(--olive-deep)] transition hover:brightness-110 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground"
               >
-                {!canAddMore ? "Full" : userOnIt ? "+ Another" : "Bring it"}
+                {!canAddMore ? "Full" : userOnIt ? "+ Add" : "Bring it"}
               </button>
             </>
           )}
         </div>
       </div>
 
-      {noteOpen && userOnIt && (
-        <div className="mt-3 flex gap-2">
-          <input
-            autoFocus
-            value={noteText}
-            onChange={(e) => setNoteText(e.target.value)}
-            placeholder="Add a note (e.g. 'handle of tequila', 'big bag')"
-            className="flex-1 rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-[var(--gold)]"
-            onKeyDown={(e) => {
-              if (e.key === "Enter") onSaveNote();
-              if (e.key === "Escape") onCloseNote();
-            }}
-          />
-          <button
-            onClick={onSaveNote}
-            className="rounded-md bg-[var(--gold)] px-3 py-2 text-xs uppercase tracking-wider text-[var(--olive-deep)]"
-          >
-            Save
-          </button>
-          <button
-            onClick={onCloseNote}
-            className="rounded-md border border-border px-3 py-2 text-xs uppercase tracking-wider text-muted-foreground"
-          >
-            Skip
-          </button>
+      {formOpen && (
+        <div className="mt-3 rounded-md border border-[var(--gold)]/30 bg-background/60 p-3">
+          <div className="flex flex-wrap items-end gap-3">
+            <div>
+              <label className="mb-1 block text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                How many?
+              </label>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => setFormAmount(Math.max(1, formAmount - 1))}
+                  className="rounded-md border border-border px-2.5 py-1.5 text-sm text-muted-foreground hover:border-[var(--gold)] hover:text-[var(--gold)]"
+                  aria-label="Decrease"
+                >
+                  −
+                </button>
+                <input
+                  type="number"
+                  min={1}
+                  max={remaining ?? 99}
+                  value={formAmount}
+                  onChange={(e) => setFormAmount(parseInt(e.target.value) || 1)}
+                  className="w-14 rounded-md border border-border bg-background px-2 py-1.5 text-center text-sm text-foreground outline-none focus:border-[var(--gold)]"
+                />
+                <button
+                  type="button"
+                  onClick={() =>
+                    setFormAmount(
+                      remaining !== null
+                        ? Math.min(remaining, formAmount + 1)
+                        : formAmount + 1,
+                    )
+                  }
+                  className="rounded-md border border-border px-2.5 py-1.5 text-sm text-muted-foreground hover:border-[var(--gold)] hover:text-[var(--gold)]"
+                  aria-label="Increase"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+            <div className="min-w-[180px] flex-1">
+              <label className="mb-1 block text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                Note (optional)
+              </label>
+              <input
+                autoFocus
+                value={formNote}
+                onChange={(e) => setFormNote(e.target.value)}
+                placeholder="e.g. 'handle of tequila', 'big bag'"
+                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-[var(--gold)]"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") onSubmitForm();
+                  if (e.key === "Escape") onCloseForm();
+                }}
+              />
+            </div>
+          </div>
+          <div className="mt-3 flex gap-2">
+            <button
+              onClick={onSubmitForm}
+              className="rounded-md bg-[var(--gold)] px-3 py-2 text-xs uppercase tracking-wider text-[var(--olive-deep)]"
+            >
+              Confirm
+            </button>
+            <button
+              onClick={onCloseForm}
+              className="rounded-md border border-border px-3 py-2 text-xs uppercase tracking-wider text-muted-foreground"
+            >
+              Cancel
+            </button>
+          </div>
         </div>
       )}
     </li>
   );
 }
+
 
 function WhoTab({
   claims,
