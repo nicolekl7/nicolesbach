@@ -409,9 +409,26 @@ function ItemRow({
   const taken = claims.length;
   const remaining = finiteQty !== null ? Math.max(0, finiteQty - taken) : null;
   const fullyCovered = finiteQty !== null && taken >= finiteQty;
-  const userOnIt = user && claims.some((c) => c.name === user);
-  const locked = fullyCovered && !userOnIt;
+  const userCount = user ? claims.filter((c) => c.name === user).length : 0;
+  const userOnIt = userCount > 0;
+  const canAddMore = !isByo && !fullyCovered;
   const others = claims.filter((c) => c.name !== user);
+
+  // Group others by name with count
+  const othersGrouped = others.reduce<{ name: Name; count: number; notes: string[] }[]>(
+    (acc, c) => {
+      const existing = acc.find((g) => g.name === c.name);
+      if (existing) {
+        existing.count += 1;
+        if (c.note) existing.notes.push(c.note);
+      } else {
+        acc.push({ name: c.name, count: 1, notes: c.note ? [c.note] : [] });
+      }
+      return acc;
+    },
+    [],
+  );
+  const userNotes = claims.filter((c) => c.name === user && c.note).map((c) => c.note!);
 
   return (
     <li
@@ -448,27 +465,23 @@ function ItemRow({
           )}
           {claims.length > 0 && (
             <p className="mt-1.5 text-xs text-muted-foreground">
-              {others.length > 0 && (
-                <>
-                  {others.map((c, i) => (
-                    <span key={i}>
-                      {c.name}
-                      {c.note ? (
-                        <span className="text-muted-foreground/70"> ({c.note})</span>
-                      ) : null}
-                      {i < others.length - 1 ? ", " : ""}
-                    </span>
-                  ))}
-                </>
-              )}
+              {othersGrouped.map((g, i) => (
+                <span key={i}>
+                  {g.name}
+                  {g.count > 1 ? ` ×${g.count}` : ""}
+                  {g.notes.length > 0 && (
+                    <span className="text-muted-foreground/70"> ({g.notes.join(", ")})</span>
+                  )}
+                  {i < othersGrouped.length - 1 ? ", " : ""}
+                </span>
+              ))}
               {userOnIt && (
-                <span className={others.length > 0 ? " · " : ""}>
-                  <span className="text-[var(--gold)]">you</span>
-                  {claims.find((c) => c.name === user)?.note && (
-                    <span className="text-muted-foreground/70">
-                      {" "}
-                      ({claims.find((c) => c.name === user)?.note})
-                    </span>
+                <span className={othersGrouped.length > 0 ? " · " : ""}>
+                  <span className="text-[var(--gold)]">
+                    you{userCount > 1 ? ` ×${userCount}` : ""}
+                  </span>
+                  {userNotes.length > 0 && (
+                    <span className="text-muted-foreground/70"> ({userNotes.join(", ")})</span>
                   )}
                 </span>
               )}
@@ -476,24 +489,28 @@ function ItemRow({
           )}
         </div>
 
-        <div className="shrink-0">
+        <div className="flex shrink-0 items-center gap-1.5">
           {isByo ? (
             <span className="text-xs text-muted-foreground">—</span>
-          ) : userOnIt ? (
-            <button
-              onClick={onUnclaim}
-              className="rounded-md border border-border px-3 py-1.5 text-xs uppercase tracking-wider text-muted-foreground transition hover:border-[var(--gold)] hover:text-[var(--gold)]"
-            >
-              Undo
-            </button>
           ) : (
-            <button
-              onClick={onClaim}
-              disabled={locked}
-              className="rounded-md bg-[var(--gold)] px-3 py-1.5 text-xs font-medium uppercase tracking-wider text-[var(--olive-deep)] transition hover:brightness-110 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground"
-            >
-              {locked ? "Full" : "Bring it"}
-            </button>
+            <>
+              {userOnIt && (
+                <button
+                  onClick={onUnclaim}
+                  className="rounded-md border border-border px-2.5 py-1.5 text-xs uppercase tracking-wider text-muted-foreground transition hover:border-[var(--gold)] hover:text-[var(--gold)]"
+                  aria-label="Remove one"
+                >
+                  −
+                </button>
+              )}
+              <button
+                onClick={onClaim}
+                disabled={!canAddMore}
+                className="rounded-md bg-[var(--gold)] px-3 py-1.5 text-xs font-medium uppercase tracking-wider text-[var(--olive-deep)] transition hover:brightness-110 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground"
+              >
+                {!canAddMore ? "Full" : userOnIt ? "+ Another" : "Bring it"}
+              </button>
+            </>
           )}
         </div>
       </div>
