@@ -152,8 +152,9 @@ export default function BachelorettePage() {
   const [tab, setTab] = useState<
     "details" | "itinerary" | "signup" | "who" | "admin"
   >("details");
-  const [noteFor, setNoteFor] = useState<string | null>(null);
-  const [noteText, setNoteText] = useState("");
+  const [formFor, setFormFor] = useState<string | null>(null);
+  const [formAmount, setFormAmount] = useState(1);
+  const [formNote, setFormNote] = useState("");
   const [adminPw, setAdminPw] = useState("");
   const [adminOk, setAdminOk] = useState(false);
 
