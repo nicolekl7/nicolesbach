@@ -185,11 +185,7 @@ export default function BachelorettePage() {
     if (!requireUser()) return;
     if (item.qty === "byo") return;
     const current = claims[item.id] ?? [];
-    if (
-      typeof item.qty === "number" &&
-      current.length >= item.qty &&
-      !current.some((c) => c.name === user)
-    ) {
+    if (typeof item.qty === "number" && current.length >= item.qty) {
       return;
     }
     setClaims({ ...claims, [item.id]: [...current, { name: user as Name }] });
@@ -203,12 +199,13 @@ export default function BachelorettePage() {
   const unclaim = (item: Item) => {
     if (!requireUser()) return;
     const current = claims[item.id] ?? [];
-    const idx = current.findIndex((c) => c.name === user);
-    if (idx === -1) return;
+    const revIdx = [...current].reverse().findIndex((c) => c.name === user);
+    if (revIdx === -1) return;
+    const realIdx = current.length - 1 - revIdx;
     const next = [...current];
-    next.splice(idx, 1);
+    next.splice(realIdx, 1);
     setClaims({ ...claims, [item.id]: next });
-    toast(`Removed ${item.label.toLowerCase()}`);
+    toast(`Removed one ${item.label.toLowerCase()}`);
   };
 
   const saveNote = (itemId: string) => {
