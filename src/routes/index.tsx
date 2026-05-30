@@ -396,24 +396,28 @@ function ItemRow({
   item,
   claims,
   user,
-  onClaim,
+  onOpenForm,
   onUnclaim,
-  noteOpen,
-  noteText,
-  setNoteText,
-  onSaveNote,
-  onCloseNote,
+  formOpen,
+  formAmount,
+  setFormAmount,
+  formNote,
+  setFormNote,
+  onSubmitForm,
+  onCloseForm,
 }: {
   item: Item;
   claims: Claim[];
   user: Name | "";
-  onClaim: () => void;
+  onOpenForm: () => void;
   onUnclaim: () => void;
-  noteOpen: boolean;
-  noteText: string;
-  setNoteText: (v: string) => void;
-  onSaveNote: () => void;
-  onCloseNote: () => void;
+  formOpen: boolean;
+  formAmount: number;
+  setFormAmount: (n: number) => void;
+  formNote: string;
+  setFormNote: (v: string) => void;
+  onSubmitForm: () => void;
+  onCloseForm: () => void;
 }) {
   const isByo = item.qty === "byo";
   const isUnlimited = item.qty === "unlimited";
