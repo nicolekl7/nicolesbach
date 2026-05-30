@@ -182,19 +182,40 @@ export default function BachelorettePage() {
     return true;
   };
 
-  const claim = (item: Item) => {
+  const openForm = (item: Item) => {
     if (!requireUser()) return;
     if (item.qty === "byo") return;
     const current = claims[item.id] ?? [];
-    if (typeof item.qty === "number" && current.length >= item.qty) {
-      return;
+    if (typeof item.qty === "number" && current.length >= item.qty) return;
+    setFormFor(item.id);
+    setFormAmount(1);
+    setFormNote("");
+  };
+
+  const submitForm = (item: Item) => {
+    if (!requireUser()) return;
+    const current = claims[item.id] ?? [];
+    let amount = Math.max(1, Math.floor(formAmount || 1));
+    if (typeof item.qty === "number") {
+      const room = item.qty - current.length;
+      if (room <= 0) {
+        setFormFor(null);
+        return;
+      }
+      amount = Math.min(amount, room);
     }
-    setClaims({ ...claims, [item.id]: [...current, { name: user as Name }] });
-    setNoteFor(item.id);
-    setNoteText("");
-    toast.success(`You've got ${item.label.toLowerCase()}`, {
-      description: "Add a note if there's a detail to share.",
-    });
+    const note = formNote.trim() || undefined;
+    const additions: Claim[] = Array.from({ length: amount }, () => ({
+      name: user as Name,
+      note,
+    }));
+    setClaims({ ...claims, [item.id]: [...current, ...additions] });
+    setFormFor(null);
+    setFormNote("");
+    setFormAmount(1);
+    toast.success(
+      `You've got ${amount > 1 ? `${amount} × ` : ""}${item.label.toLowerCase()}`,
+    );
   };
 
   const unclaim = (item: Item) => {
@@ -207,19 +228,6 @@ export default function BachelorettePage() {
     next.splice(realIdx, 1);
     setClaims({ ...claims, [item.id]: next });
     toast(`Removed one ${item.label.toLowerCase()}`);
-  };
-
-  const saveNote = (itemId: string) => {
-    const list = claims[itemId] ?? [];
-    const idx = [...list].reverse().findIndex((c) => c.name === user);
-    if (idx === -1) return;
-    const realIdx = list.length - 1 - idx;
-    const next = [...list];
-    next[realIdx] = { ...next[realIdx], note: noteText.trim() || undefined };
-    setClaims({ ...claims, [itemId]: next });
-    setNoteFor(null);
-    setNoteText("");
-    if (noteText.trim()) toast.success("Note saved");
   };
 
   return (
