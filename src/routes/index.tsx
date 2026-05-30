@@ -152,8 +152,9 @@ export default function BachelorettePage() {
   const [tab, setTab] = useState<
     "details" | "itinerary" | "signup" | "who" | "admin"
   >("details");
-  const [noteFor, setNoteFor] = useState<string | null>(null);
-  const [noteText, setNoteText] = useState("");
+  const [formFor, setFormFor] = useState<string | null>(null);
+  const [formAmount, setFormAmount] = useState(1);
+  const [formNote, setFormNote] = useState("");
   const [adminPw, setAdminPw] = useState("");
   const [adminOk, setAdminOk] = useState(false);
 
@@ -181,19 +182,40 @@ export default function BachelorettePage() {
     return true;
   };
 
-  const claim = (item: Item) => {
+  const openForm = (item: Item) => {
     if (!requireUser()) return;
     if (item.qty === "byo") return;
     const current = claims[item.id] ?? [];
-    if (typeof item.qty === "number" && current.length >= item.qty) {
-      return;
+    if (typeof item.qty === "number" && current.length >= item.qty) return;
+    setFormFor(item.id);
+    setFormAmount(1);
+    setFormNote("");
+  };
+
+  const submitForm = (item: Item) => {
+    if (!requireUser()) return;
+    const current = claims[item.id] ?? [];
+    let amount = Math.max(1, Math.floor(formAmount || 1));
+    if (typeof item.qty === "number") {
+      const room = item.qty - current.length;
+      if (room <= 0) {
+        setFormFor(null);
+        return;
+      }
+      amount = Math.min(amount, room);
     }
-    setClaims({ ...claims, [item.id]: [...current, { name: user as Name }] });
-    setNoteFor(item.id);
-    setNoteText("");
-    toast.success(`You've got ${item.label.toLowerCase()}`, {
-      description: "Add a note if there's a detail to share.",
-    });
+    const note = formNote.trim() || undefined;
+    const additions: Claim[] = Array.from({ length: amount }, () => ({
+      name: user as Name,
+      note,
+    }));
+    setClaims({ ...claims, [item.id]: [...current, ...additions] });
+    setFormFor(null);
+    setFormNote("");
+    setFormAmount(1);
+    toast.success(
+      `You've got ${amount > 1 ? `${amount} × ` : ""}${item.label.toLowerCase()}`,
+    );
   };
 
   const unclaim = (item: Item) => {
@@ -206,19 +228,6 @@ export default function BachelorettePage() {
     next.splice(realIdx, 1);
     setClaims({ ...claims, [item.id]: next });
     toast(`Removed one ${item.label.toLowerCase()}`);
-  };
-
-  const saveNote = (itemId: string) => {
-    const list = claims[itemId] ?? [];
-    const idx = [...list].reverse().findIndex((c) => c.name === user);
-    if (idx === -1) return;
-    const realIdx = list.length - 1 - idx;
-    const next = [...list];
-    next[realIdx] = { ...next[realIdx], note: noteText.trim() || undefined };
-    setClaims({ ...claims, [itemId]: next });
-    setNoteFor(null);
-    setNoteText("");
-    if (noteText.trim()) toast.success("Note saved");
   };
 
   return (
@@ -316,14 +325,17 @@ export default function BachelorettePage() {
                       item={item}
                       claims={claims[item.id] ?? []}
                       user={user}
-                      onClaim={() => claim(item)}
+                      onOpenForm={() => openForm(item)}
                       onUnclaim={() => unclaim(item)}
-                      noteOpen={noteFor === item.id}
-                      noteText={noteText}
-                      setNoteText={setNoteText}
-                      onSaveNote={() => saveNote(item.id)}
-                      onCloseNote={() => setNoteFor(null)}
+                      formOpen={formFor === item.id}
+                      formAmount={formAmount}
+                      setFormAmount={setFormAmount}
+                      formNote={formNote}
+                      setFormNote={setFormNote}
+                      onSubmitForm={() => submitForm(item)}
+                      onCloseForm={() => setFormFor(null)}
                     />
+
                   ))}
                 </ul>
               </section>
@@ -384,24 +396,28 @@ function ItemRow({
   item,
   claims,
   user,
-  onClaim,
+  onOpenForm,
   onUnclaim,
-  noteOpen,
-  noteText,
-  setNoteText,
-  onSaveNote,
-  onCloseNote,
+  formOpen,
+  formAmount,
+  setFormAmount,
+  formNote,
+  setFormNote,
+  onSubmitForm,
+  onCloseForm,
 }: {
   item: Item;
   claims: Claim[];
   user: Name | "";
-  onClaim: () => void;
+  onOpenForm: () => void;
   onUnclaim: () => void;
-  noteOpen: boolean;
-  noteText: string;
-  setNoteText: (v: string) => void;
-  onSaveNote: () => void;
-  onCloseNote: () => void;
+  formOpen: boolean;
+  formAmount: number;
+  setFormAmount: (n: number) => void;
+  formNote: string;
+  setFormNote: (v: string) => void;
+  onSubmitForm: () => void;
+  onCloseForm: () => void;
 }) {
   const isByo = item.qty === "byo";
   const isUnlimited = item.qty === "unlimited";
@@ -504,47 +520,94 @@ function ItemRow({
                 </button>
               )}
               <button
-                onClick={onClaim}
+                onClick={onOpenForm}
                 disabled={!canAddMore}
                 className="rounded-md bg-[var(--gold)] px-3 py-1.5 text-xs font-medium uppercase tracking-wider text-[var(--olive-deep)] transition hover:brightness-110 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground"
               >
-                {!canAddMore ? "Full" : userOnIt ? "+ Another" : "Bring it"}
+                {!canAddMore ? "Full" : userOnIt ? "+ Add" : "Bring it"}
               </button>
             </>
           )}
         </div>
       </div>
 
-      {noteOpen && userOnIt && (
-        <div className="mt-3 flex gap-2">
-          <input
-            autoFocus
-            value={noteText}
-            onChange={(e) => setNoteText(e.target.value)}
-            placeholder="Add a note (e.g. 'handle of tequila', 'big bag')"
-            className="flex-1 rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-[var(--gold)]"
-            onKeyDown={(e) => {
-              if (e.key === "Enter") onSaveNote();
-              if (e.key === "Escape") onCloseNote();
-            }}
-          />
-          <button
-            onClick={onSaveNote}
-            className="rounded-md bg-[var(--gold)] px-3 py-2 text-xs uppercase tracking-wider text-[var(--olive-deep)]"
-          >
-            Save
-          </button>
-          <button
-            onClick={onCloseNote}
-            className="rounded-md border border-border px-3 py-2 text-xs uppercase tracking-wider text-muted-foreground"
-          >
-            Skip
-          </button>
+      {formOpen && (
+        <div className="mt-3 rounded-md border border-[var(--gold)]/30 bg-background/60 p-3">
+          <div className="flex flex-wrap items-end gap-3">
+            <div>
+              <label className="mb-1 block text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                How many?
+              </label>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => setFormAmount(Math.max(1, formAmount - 1))}
+                  className="rounded-md border border-border px-2.5 py-1.5 text-sm text-muted-foreground hover:border-[var(--gold)] hover:text-[var(--gold)]"
+                  aria-label="Decrease"
+                >
+                  −
+                </button>
+                <input
+                  type="number"
+                  min={1}
+                  max={remaining ?? 99}
+                  value={formAmount}
+                  onChange={(e) => setFormAmount(parseInt(e.target.value) || 1)}
+                  className="w-14 rounded-md border border-border bg-background px-2 py-1.5 text-center text-sm text-foreground outline-none focus:border-[var(--gold)]"
+                />
+                <button
+                  type="button"
+                  onClick={() =>
+                    setFormAmount(
+                      remaining !== null
+                        ? Math.min(remaining, formAmount + 1)
+                        : formAmount + 1,
+                    )
+                  }
+                  className="rounded-md border border-border px-2.5 py-1.5 text-sm text-muted-foreground hover:border-[var(--gold)] hover:text-[var(--gold)]"
+                  aria-label="Increase"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+            <div className="min-w-[180px] flex-1">
+              <label className="mb-1 block text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                Note (optional)
+              </label>
+              <input
+                autoFocus
+                value={formNote}
+                onChange={(e) => setFormNote(e.target.value)}
+                placeholder="e.g. 'handle of tequila', 'big bag'"
+                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-[var(--gold)]"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") onSubmitForm();
+                  if (e.key === "Escape") onCloseForm();
+                }}
+              />
+            </div>
+          </div>
+          <div className="mt-3 flex gap-2">
+            <button
+              onClick={onSubmitForm}
+              className="rounded-md bg-[var(--gold)] px-3 py-2 text-xs uppercase tracking-wider text-[var(--olive-deep)]"
+            >
+              Confirm
+            </button>
+            <button
+              onClick={onCloseForm}
+              className="rounded-md border border-border px-3 py-2 text-xs uppercase tracking-wider text-muted-foreground"
+            >
+              Cancel
+            </button>
+          </div>
         </div>
       )}
     </li>
   );
 }
+
 
 function WhoTab({
   claims,
