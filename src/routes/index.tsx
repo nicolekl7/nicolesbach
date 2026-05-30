@@ -325,14 +325,17 @@ export default function BachelorettePage() {
                       item={item}
                       claims={claims[item.id] ?? []}
                       user={user}
-                      onClaim={() => claim(item)}
+                      onOpenForm={() => openForm(item)}
                       onUnclaim={() => unclaim(item)}
-                      noteOpen={noteFor === item.id}
-                      noteText={noteText}
-                      setNoteText={setNoteText}
-                      onSaveNote={() => saveNote(item.id)}
-                      onCloseNote={() => setNoteFor(null)}
+                      formOpen={formFor === item.id}
+                      formAmount={formAmount}
+                      setFormAmount={setFormAmount}
+                      formNote={formNote}
+                      setFormNote={setFormNote}
+                      onSubmitForm={() => submitForm(item)}
+                      onCloseForm={() => setFormFor(null)}
                     />
+
                   ))}
                 </ul>
               </section>
