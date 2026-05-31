@@ -36,9 +36,10 @@ const NAMES = [
 ] as const;
 type Name = (typeof NAMES)[number];
 
+type PaidMap = Record<Name, Record<string, boolean>>;
 const ALL_PAID_FALSE = Object.fromEntries(
-  NAMES.map((n) => [n, false])
-) as Record<Name, boolean>;
+  NAMES.map((n) => [n, {} as Record<string, boolean>])
+) as PaidMap;
 
 type Claim = { name: Name; note?: string };
 
@@ -159,7 +160,7 @@ export default function BachelorettePage() {
   const [formFor, setFormFor] = useState<string | null>(null);
   const [formAmount, setFormAmount] = useState(1);
   const [formNote, setFormNote] = useState("");
-  const [paid, setPaid] = useState<Record<Name, boolean>>(ALL_PAID_FALSE);
+  const [paid, setPaid] = useState<PaidMap>(ALL_PAID_FALSE);
 
 
   const allItems = useMemo(() => SECTIONS.flatMap((s) => s.items), []);
@@ -347,7 +348,16 @@ export default function BachelorettePage() {
         )}
         {tab === "who" && <WhoTab claims={claims} user={user} />}
         {tab === "spend" && (
-          <SpendTab paid={paid} user={user} onToggle={(n) => setPaid({ ...paid, [n]: !paid[n] })} />
+          <SpendTab
+            paid={paid}
+            user={user}
+            onToggle={(n, label) =>
+              setPaid({
+                ...paid,
+                [n]: { ...paid[n], [label]: !paid[n]?.[label] },
+              })
+            }
+          />
         )}
       </main>
 
@@ -698,7 +708,7 @@ const CARS: { name: string; people: string; leave: string; arrive: string }[] = 
   { name: "Car #4", people: "Charlene", leave: "1:00 PM", arrive: "4:00 PM" },
 ];
 
-function DetailsTab({ claims, paid }: { claims: Record<string, Claim[]>; paid: Record<Name, boolean> }) {
+function DetailsTab({ claims, paid }: { claims: Record<string, Claim[]>; paid: PaidMap }) {
   const [selectedGirl, setSelectedGirl] = useState<Name | null>(null);
 
   if (selectedGirl) {
