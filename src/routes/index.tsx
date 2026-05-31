@@ -789,19 +789,29 @@ function DetailsTab({ claims, paid }: { claims: Record<string, Claim[]>; paid: P
             <h3 className="font-display text-2xl text-foreground">
               <em className="text-[var(--gold)]">Payment</em>
             </h3>
-            <div className="mt-3 flex items-center justify-between text-sm">
-              <span className="text-foreground">Owed to {expenses[0]?.payer}</span>
-              <span
-                className={
-                  "rounded-full px-3 py-1 text-xs font-medium " +
-                  (paid[selectedGirl]
-                    ? "bg-emerald-500/15 text-emerald-300"
-                    : "bg-muted text-muted-foreground")
-                }
-              >
-                {paid[selectedGirl] ? "Paid" : "Not paid"}
-              </span>
-            </div>
+            <ul className="mt-3 space-y-2">
+              {expenses.map((e) => {
+                const hasPaid = !!paid[selectedGirl]?.[e.label];
+                return (
+                  <li key={e.label} className="flex items-center justify-between text-sm">
+                    <span className="text-foreground">{e.label}</span>
+                    <span
+                      className={
+                        "rounded-full border px-3 py-1 text-xs font-medium uppercase tracking-wider " +
+                        (hasPaid
+                          ? "border-green-700/40 bg-green-900/20 text-green-400"
+                          : "border-border bg-background/30 text-muted-foreground")
+                      }
+                    >
+                      {hasPaid ? "Paid" : "Not paid"}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+            <p className="mt-3 text-xs text-muted-foreground">
+              Owed to {expenses[0]?.payer}
+            </p>
           </section>
         )}
 
@@ -1043,11 +1053,21 @@ function SpendTab({
   user,
   onToggle,
 }: {
-  paid: Record<Name, boolean>;
+  paid: PaidMap;
   user: Name | "";
-  onToggle: (name: Name) => void;
+  onToggle: (name: Name, label: string) => void;
 }) {
-  const paidCount = NAMES.filter((n) => paid[n]).length;
+  const totalRequired = NAMES.reduce(
+    (sum, n) => sum + EXPENSES.filter((e) => e.splitAmong.includes(n)).length,
+    0,
+  );
+  const totalPaid = NAMES.reduce(
+    (sum, n) =>
+      sum +
+      EXPENSES.filter((e) => e.splitAmong.includes(n) && paid[n]?.[e.label])
+        .length,
+    0,
+  );
 
   return (
     <div className="space-y-8">
@@ -1056,34 +1076,48 @@ function SpendTab({
           <em className="text-[var(--gold)]">Payments</em>
         </h2>
         <p className="mt-1 text-xs uppercase tracking-[0.2em] text-[var(--gold-soft)]">
-          {paidCount} of {NAMES.length} paid
+          {totalPaid} of {totalRequired} paid
         </p>
-        <ul className="mt-5 divide-y divide-border">
+        <ul className="mt-5 space-y-5">
           {NAMES.map((n) => {
             const isMe = n === user;
-            const hasPaid = paid[n];
+            const expenses = EXPENSES.filter((e) => e.splitAmong.includes(n));
             return (
-              <li key={n} className="flex items-center justify-between py-3">
-                <button
-                  onClick={() => isMe && onToggle(n)}
-                  className={`text-sm ${
-                    isMe
-                      ? "cursor-pointer text-[var(--gold)] hover:underline"
-                      : "text-foreground"
-                  }`}
-                  disabled={!isMe}
-                >
-                  {n} {isMe && "(you)"}
-                </button>
-                <span
-                  className={`rounded-full border px-3 py-1 text-xs font-medium uppercase tracking-wider ${
-                    hasPaid
-                      ? "border-green-700/40 bg-green-900/20 text-green-400"
-                      : "border-border bg-background/30 text-muted-foreground"
-                  }`}
-                >
-                  {hasPaid ? "Paid" : "Not paid"}
-                </span>
+              <li key={n} className="border-b border-border pb-4 last:border-0">
+                <div className="flex items-baseline justify-between">
+                  <span className="text-sm font-medium text-foreground">
+                    {n} {isMe && <span className="text-[var(--gold)]">(you)</span>}
+                  </span>
+                </div>
+                <ul className="mt-2 space-y-1.5">
+                  {expenses.map((e) => {
+                    const hasPaid = !!paid[n]?.[e.label];
+                    return (
+                      <li
+                        key={e.label}
+                        className="flex items-center justify-between text-sm"
+                      >
+                        <span className="text-muted-foreground">
+                          {e.label}
+                          <span className="ml-2 text-xs tabular-nums text-[var(--gold-soft)]">
+                            ${e.perPerson}
+                          </span>
+                        </span>
+                        <button
+                          onClick={() => isMe && onToggle(n, e.label)}
+                          disabled={!isMe}
+                          className={`rounded-full border px-3 py-1 text-xs font-medium uppercase tracking-wider transition ${
+                            hasPaid
+                              ? "border-green-700/40 bg-green-900/20 text-green-400"
+                              : "border-border bg-background/30 text-muted-foreground"
+                          } ${isMe ? "cursor-pointer hover:border-[var(--gold)]" : "cursor-default"}`}
+                        >
+                          {hasPaid ? "Paid" : "Not paid"}
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
               </li>
             );
           })}
