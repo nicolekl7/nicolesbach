@@ -617,13 +617,19 @@ function WhoTab({
   user: Name | "";
 }) {
   const itemsByPerson = useMemo(() => {
-    const map = {} as Record<Name, { label: string; note?: string }[]>;
+    const map = {} as Record<Name, { label: string; count: number }[]>;
     for (const n of NAMES) map[n] = [];
     for (const section of SECTIONS) {
       for (const item of section.items) {
         const list = claims[item.id] ?? [];
+        const counts: Record<string, number> = {};
         for (const c of list) {
-          map[c.name].push({ label: item.label, note: c.note });
+          counts[item.label] = (counts[item.label] || 0) + 1;
+        }
+        for (const c of list) {
+          if (!map[c.name].some((x) => x.label === item.label)) {
+            map[c.name].push({ label: item.label, count: counts[item.label] });
+          }
         }
       }
     }
@@ -635,6 +641,7 @@ function WhoTab({
       {NAMES.map((name) => {
         const isMe = name === user;
         const items = itemsByPerson[name];
+        const totalClaims = items.reduce((sum, it) => sum + it.count, 0);
         return (
           <div
             key={name}
@@ -658,7 +665,7 @@ function WhoTab({
                 )}
               </h3>
               <span className="text-xs text-muted-foreground">
-                {items.length} {items.length === 1 ? "item" : "items"}
+                {totalClaims} {totalClaims === 1 ? "item" : "items"}
               </span>
             </div>
             <div className="mt-3 flex flex-wrap gap-1.5">
@@ -677,8 +684,8 @@ function WhoTab({
                     }`}
                   >
                     {it.label}
-                    {it.note && (
-                      <span className="ml-1 opacity-70">· {it.note}</span>
+                    {it.count > 1 && (
+                      <span className="ml-0.5 opacity-70">({it.count})</span>
                     )}
                   </span>
                 ))
