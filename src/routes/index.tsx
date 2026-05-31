@@ -291,7 +291,7 @@ export default function BachelorettePage() {
       </div>
 
       <main className="relative z-10 mx-auto max-w-3xl px-5 py-8 pb-24">
-        {tab === "details" && <DetailsTab />}
+        {tab === "details" && <DetailsTab claims={claims} />}
         {tab === "itinerary" && <ItineraryTab />}
         {tab === "signup" && (
           <>
@@ -700,7 +700,138 @@ const CARS: { name: string; people: string; leave: string; arrive: string }[] = 
   { name: "Car #4", people: "Charlene", leave: "1:00 PM", arrive: "4:00 PM" },
 ];
 
-function DetailsTab() {
+function DetailsTab({ claims }: { claims: Record<string, Claim[]> }) {
+  const [selectedGirl, setSelectedGirl] = useState<Name | null>(null);
+
+  if (selectedGirl) {
+    const car = CARS.find((c) => c.people.includes(selectedGirl));
+    const items: { label: string; note?: string }[] = [];
+    for (const section of SECTIONS) {
+      for (const item of section.items) {
+        const list = claims[item.id] ?? [];
+        for (const c of list) {
+          if (c.name === selectedGirl) {
+            items.push({ label: item.label, note: c.note });
+          }
+        }
+      }
+    }
+    const expenses = EXPENSES.filter((e) => e.splitAmong.includes(selectedGirl));
+    const earlyLeavers = ["Phoebe", "Taylor", "Casey"];
+    const leavesEarly = earlyLeavers.includes(selectedGirl);
+    const totalOwed = expenses.reduce((s, e) => s + e.perPerson, 0);
+
+    return (
+      <div className="space-y-8">
+        <button
+          onClick={() => setSelectedGirl(null)}
+          className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-xs uppercase tracking-wider text-muted-foreground transition hover:border-[var(--gold)] hover:text-[var(--gold)]"
+        >
+          ← Back to details
+        </button>
+
+        <div className="text-center">
+          <h2 className="font-display text-5xl text-[var(--gold)] sm:text-6xl">
+            {selectedGirl}
+          </h2>
+        </div>
+
+        {car && (
+          <section className="rounded-lg border border-border bg-card/40 p-6">
+            <h3 className="font-display text-2xl text-foreground">
+              <em className="text-[var(--gold)]">Your ride</em>
+            </h3>
+            <p className="mt-3 text-sm font-medium text-foreground">{car.name}</p>
+            <p className="text-xs text-muted-foreground">
+              Leave {car.leave} · Arrive {car.arrive}
+            </p>
+            <p className="mt-2 text-xs text-muted-foreground">
+              With {car.people}
+            </p>
+          </section>
+        )}
+
+        <section className="rounded-lg border border-border bg-card/40 p-6">
+          <h3 className="font-display text-2xl text-foreground">
+            <em className="text-[var(--gold)]">You're bringing</em>
+          </h3>
+          {items.length === 0 ? (
+            <p className="mt-3 text-sm italic text-muted-foreground">
+              Nothing signed up yet
+            </p>
+          ) : (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {items.map((it, i) => (
+                <span
+                  key={i}
+                  className="rounded-full border border-[var(--gold)] bg-[var(--gold)]/10 px-3 py-1.5 text-sm text-[var(--gold-soft)]"
+                >
+                  {it.label}
+                  {it.note && (
+                    <span className="ml-1 opacity-70">· {it.note}</span>
+                  )}
+                </span>
+              ))}
+            </div>
+          )}
+        </section>
+
+        {expenses.length > 0 && (
+          <section className="rounded-lg border border-border bg-card/40 p-6">
+            <h3 className="font-display text-2xl text-foreground">
+              <em className="text-[var(--gold)]">Your share</em>
+            </h3>
+            <ul className="mt-3 space-y-2">
+              {expenses.map((e) => (
+                <li key={e.label} className="flex items-baseline justify-between text-sm">
+                  <span className="text-foreground">{e.label}</span>
+                  <span className="tabular-nums text-[var(--gold-soft)]">
+                    ${e.perPerson.toLocaleString()}
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-3 text-xs text-muted-foreground">
+              Total owed to {expenses[0]?.payer}: ${totalOwed.toLocaleString()}
+            </p>
+          </section>
+        )}
+
+        <section className="rounded-lg border border-border bg-card/40 p-6">
+          <h3 className="font-display text-2xl text-foreground">
+            <em className="text-[var(--gold)]">Itinerary</em>
+          </h3>
+          <div className="mt-4 space-y-5">
+            {ITINERARY.map((day) => (
+              <div key={day.date}>
+                <p className="text-xs uppercase tracking-[0.2em] text-[var(--gold-soft)]">
+                  {day.label} · {day.date}
+                </p>
+                <ul className="mt-2 space-y-1.5">
+                  {day.blocks.map((b, i) => (
+                    <li key={i} className="flex gap-3 text-sm">
+                      <span className="w-16 shrink-0 tabular-nums text-muted-foreground">
+                        {b.time}
+                      </span>
+                      <span className="text-foreground">{b.what}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+          {leavesEarly && (
+            <div className="mt-4 rounded-md border border-[var(--gold)]/30 bg-[var(--gold)]/5 p-3">
+              <p className="text-sm text-[var(--gold-soft)]">
+                Heads up — you need to leave by Sunday at 12:00 PM.
+              </p>
+            </div>
+          )}
+        </section>
+      </div>
+    );
+  }
+
   const houseAddr = "21 Bellevue St Unit #5, Dewey Beach, DE 19971";
   return (
     <div className="space-y-8">
@@ -748,12 +879,13 @@ function DetailsTab() {
         </h2>
         <div className="mt-5 flex flex-wrap gap-2">
           {NAMES.map((n) => (
-            <span
+            <button
               key={n}
-              className="rounded-full border border-border bg-background/30 px-3 py-1.5 text-sm text-foreground"
+              onClick={() => setSelectedGirl(n)}
+              className="rounded-full border border-border bg-background/30 px-3 py-1.5 text-sm text-foreground transition hover:border-[var(--gold)] hover:text-[var(--gold)]"
             >
               {n}
-            </span>
+            </button>
           ))}
         </div>
       </section>
