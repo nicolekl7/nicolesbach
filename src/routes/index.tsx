@@ -1028,101 +1028,55 @@ const EXPENSES: Expense[] = [
   },
 ];
 
-function AdminTab({
-  ok,
-  pw,
-  setPw,
-  onSubmit,
+function SpendTab({
+  paid,
+  user,
+  onToggle,
 }: {
-  ok: boolean;
-  pw: string;
-  setPw: (v: string) => void;
-  onSubmit: () => void;
+  paid: Record<Name, boolean>;
+  user: Name | "";
+  onToggle: (name: Name) => void;
 }) {
-  if (!ok) {
-    return (
-      <div className="mx-auto max-w-sm rounded-lg border border-border bg-card/40 p-6 text-center">
-        <h2 className="font-display text-2xl italic text-foreground">
-          Admin only
-        </h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Enter the password to view expenses.
-        </p>
-        <input
-          type="password"
-          value={pw}
-          onChange={(e) => setPw(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") onSubmit();
-          }}
-          placeholder="Password"
-          className="mt-5 w-full rounded-md border border-border bg-background px-4 py-3 text-base text-foreground outline-none focus:border-[var(--gold)]"
-        />
-        <button
-          onClick={onSubmit}
-          className="mt-3 w-full rounded-md bg-[var(--gold)] px-4 py-2.5 text-sm font-medium uppercase tracking-wider text-[var(--olive-deep)]"
-        >
-          Unlock
-        </button>
-      </div>
-    );
-  }
-
-  const totalPerPerson = {} as Record<Name, number>;
-  for (const n of NAMES) totalPerPerson[n] = 0;
-  for (const e of EXPENSES) {
-    for (const n of e.splitAmong) totalPerPerson[n] += e.perPerson;
-  }
-  const grandTotal = EXPENSES.reduce((s, e) => s + e.total, 0);
+  const paidCount = NAMES.filter((n) => paid[n]).length;
 
   return (
     <div className="space-y-8">
       <section className="rounded-lg border border-border bg-card/40 p-6">
         <h2 className="font-display text-3xl text-foreground sm:text-4xl">
-          <em className="text-[var(--gold)]">Expenses</em>
+          <em className="text-[var(--gold)]">Payments</em>
         </h2>
         <p className="mt-1 text-xs uppercase tracking-[0.2em] text-[var(--gold-soft)]">
-          Total: ${grandTotal.toLocaleString()}
+          {paidCount} of {NAMES.length} paid
         </p>
         <ul className="mt-5 divide-y divide-border">
-          {EXPENSES.map((e) => (
-            <li key={e.label} className="py-4">
-              <div className="flex flex-wrap items-baseline justify-between gap-2">
-                <span className="font-display text-xl italic text-foreground">
-                  {e.label}
+          {NAMES.map((n) => {
+            const isMe = n === user;
+            const hasPaid = paid[n];
+            return (
+              <li key={n} className="flex items-center justify-between py-3">
+                <button
+                  onClick={() => isMe && onToggle(n)}
+                  className={`text-sm ${
+                    isMe
+                      ? "cursor-pointer text-[var(--gold)] hover:underline"
+                      : "text-foreground"
+                  }`}
+                  disabled={!isMe}
+                >
+                  {n} {isMe && "(you)"}
+                </button>
+                <span
+                  className={`rounded-full border px-3 py-1 text-xs font-medium uppercase tracking-wider ${
+                    hasPaid
+                      ? "border-green-700/40 bg-green-900/20 text-green-400"
+                      : "border-border bg-background/30 text-muted-foreground"
+                  }`}
+                >
+                  {hasPaid ? "Paid" : "Not paid"}
                 </span>
-                <span className="text-sm text-foreground">
-                  ${e.total.toLocaleString()}{" "}
-                  <span className="text-muted-foreground">
-                    · ${e.perPerson}/pp
-                  </span>
-                </span>
-              </div>
-              <p className="mt-1 text-xs text-muted-foreground">
-                Paid by <span className="text-[var(--gold-soft)]">{e.payer}</span>
-                {e.note && <span> · {e.note}</span>}
-              </p>
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      <section className="rounded-lg border border-border bg-card/40 p-6">
-        <h2 className="font-display text-2xl text-foreground sm:text-3xl">
-          <em className="text-[var(--gold)]">Owed to Sabrina</em>
-        </h2>
-        <ul className="mt-4 divide-y divide-border">
-          {NAMES.map((n) => (
-            <li
-              key={n}
-              className="flex items-baseline justify-between py-2.5 text-sm"
-            >
-              <span className="text-foreground">{n}</span>
-              <span className="tabular-nums text-[var(--gold-soft)]">
-                ${totalPerPerson[n].toLocaleString()}
-              </span>
-            </li>
-          ))}
+              </li>
+            );
+          })}
         </ul>
       </section>
     </div>
