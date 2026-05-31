@@ -287,8 +287,8 @@ export default function BachelorettePage() {
           <TabBtn active={tab === "who"} onClick={() => setTab("who")}>
             Who's bringing
           </TabBtn>
-          <TabBtn active={tab === "admin"} onClick={() => setTab("admin")}>
-            Admin
+          <TabBtn active={tab === "spend"} onClick={() => setTab("spend")}>
+            Spend
           </TabBtn>
         </div>
       </div>
