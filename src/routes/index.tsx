@@ -155,8 +155,7 @@ export default function BachelorettePage() {
   const [formFor, setFormFor] = useState<string | null>(null);
   const [formAmount, setFormAmount] = useState(1);
   const [formNote, setFormNote] = useState("");
-  const [adminPw, setAdminPw] = useState("");
-  const [adminOk, setAdminOk] = useState(false);
+  const [paid, setPaid] = useState<Record<Name, boolean>>({});
 
 
   const allItems = useMemo(() => SECTIONS.flatMap((s) => s.items), []);
