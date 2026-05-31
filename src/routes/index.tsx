@@ -346,20 +346,8 @@ export default function BachelorettePage() {
           </>
         )}
         {tab === "who" && <WhoTab claims={claims} user={user} />}
-        {tab === "admin" && (
-          <AdminTab
-            ok={adminOk}
-            pw={adminPw}
-            setPw={setAdminPw}
-            onSubmit={() => {
-              if (adminPw.trim().toLowerCase() === "nyler") {
-                setAdminOk(true);
-                toast.success("Welcome, admin");
-              } else {
-                toast.error("Wrong password");
-              }
-            }}
-          />
+        {tab === "spend" && (
+          <SpendTab paid={paid} user={user} onToggle={(n) => setPaid({ ...paid, [n]: !paid[n] })} />
         )}
       </main>
 
