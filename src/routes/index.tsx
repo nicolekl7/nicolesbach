@@ -36,6 +36,10 @@ const NAMES = [
 ] as const;
 type Name = (typeof NAMES)[number];
 
+const ALL_PAID_FALSE = Object.fromEntries(
+  NAMES.map((n) => [n, false])
+) as Record<Name, boolean>;
+
 type Claim = { name: Name; note?: string };
 
 type Item = {
