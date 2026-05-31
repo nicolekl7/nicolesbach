@@ -154,7 +154,7 @@ export default function BachelorettePage() {
   const [user, setUser] = useState<Name | "">("");
   const [claims, setClaims] = useState<Record<string, Claim[]>>(INITIAL_CLAIMS);
   const [tab, setTab] = useState<
-    "details" | "itinerary" | "signup" | "who" | "admin"
+    "details" | "itinerary" | "signup" | "who" | "spend"
   >("details");
   const [formFor, setFormFor] = useState<string | null>(null);
   const [formAmount, setFormAmount] = useState(1);
