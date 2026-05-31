@@ -294,7 +294,7 @@ export default function BachelorettePage() {
       </div>
 
       <main className="relative z-10 mx-auto max-w-3xl px-5 py-8 pb-24">
-        {tab === "details" && <DetailsTab claims={claims} />}
+        {tab === "details" && <DetailsTab claims={claims} paid={paid} />}
         {tab === "itinerary" && <ItineraryTab />}
         {tab === "signup" && (
           <>
@@ -698,7 +698,7 @@ const CARS: { name: string; people: string; leave: string; arrive: string }[] = 
   { name: "Car #4", people: "Charlene", leave: "1:00 PM", arrive: "4:00 PM" },
 ];
 
-function DetailsTab({ claims }: { claims: Record<string, Claim[]> }) {
+function DetailsTab({ claims, paid }: { claims: Record<string, Claim[]>; paid: Record<Name, boolean> }) {
   const [selectedGirl, setSelectedGirl] = useState<Name | null>(null);
 
   if (selectedGirl) {
@@ -777,21 +777,21 @@ function DetailsTab({ claims }: { claims: Record<string, Claim[]> }) {
         {expenses.length > 0 && (
           <section className="rounded-lg border border-border bg-card/40 p-6">
             <h3 className="font-display text-2xl text-foreground">
-              <em className="text-[var(--gold)]">Your share</em>
+              <em className="text-[var(--gold)]">Payment</em>
             </h3>
-            <ul className="mt-3 space-y-2">
-              {expenses.map((e) => (
-                <li key={e.label} className="flex items-baseline justify-between text-sm">
-                  <span className="text-foreground">{e.label}</span>
-                  <span className="tabular-nums text-[var(--gold-soft)]">
-                    ${e.perPerson.toLocaleString()}
-                  </span>
-                </li>
-              ))}
-            </ul>
-            <p className="mt-3 text-xs text-muted-foreground">
-              Total owed to {expenses[0]?.payer}: ${totalOwed.toLocaleString()}
-            </p>
+            <div className="mt-3 flex items-center justify-between text-sm">
+              <span className="text-foreground">Owed to {expenses[0]?.payer}</span>
+              <span
+                className={
+                  "rounded-full px-3 py-1 text-xs font-medium " +
+                  (paid[selectedGirl]
+                    ? "bg-emerald-500/15 text-emerald-300"
+                    : "bg-muted text-muted-foreground")
+                }
+              >
+                {paid[selectedGirl] ? "Paid" : "Not paid"}
+              </span>
+            </div>
           </section>
         )}
 
