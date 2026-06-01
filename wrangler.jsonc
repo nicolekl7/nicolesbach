@@ -14,8 +14,8 @@
       "binding": "BACH_KV",
       // Run `wrangler kv namespace create BACH_KV` to get these IDs,
       // then replace the placeholders below.
-      "id": "REPLACE_WITH_KV_NAMESPACE_ID",
-      "preview_id": "REPLACE_WITH_KV_NAMESPACE_ID"
+      "id": "cf4afc045d90488aa25ac8467d133fd4",
+      "preview_id": "cf4afc045d90488aa25ac8467d133fd4D"
     }
   ]
 }
