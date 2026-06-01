@@ -1061,7 +1061,7 @@ type Expense = {
   note?: string;
 };
 
-const EXPENSES: Expense[] = [
+const INITIAL_EXPENSES: Expense[] = [
   {
     label: "House",
     total: 3800,
@@ -1087,83 +1087,361 @@ function SpendTab({
   paid,
   user,
   onToggle,
+  expenses,
+  setExpenses,
 }: {
   paid: PaidMap;
   user: Name | "";
   onToggle: (name: Name, label: string) => void;
+  expenses: Expense[];
+  setExpenses: (e: Expense[]) => void;
 }) {
   const isAdmin = user === ADMIN;
   const visibleNames = user && !isAdmin ? [user as Name] : NAMES;
+  const [view, setView] = useState<"list" | "checklist">("checklist");
+  const [adding, setAdding] = useState(false);
+  const [newLabel, setNewLabel] = useState("");
+  const [newTotal, setNewTotal] = useState(0);
+  const [newPayer, setNewPayer] = useState<Name>(ADMIN);
+  const [newSplit, setNewSplit] = useState<Name[]>([...NAMES]);
+
   const totalRequired = NAMES.reduce(
-    (sum, n) => sum + EXPENSES.filter((e) => e.splitAmong.includes(n)).length,
+    (sum, n) => sum + expenses.filter((e) => e.splitAmong.includes(n)).length,
     0,
   );
   const totalPaid = NAMES.reduce(
     (sum, n) =>
       sum +
-      EXPENSES.filter((e) => e.splitAmong.includes(n) && paid[n]?.[e.label])
-        .length,
+      expenses.filter((e) => e.splitAmong.includes(n) && paid[n]?.[e.label]).length,
     0,
   );
+
+  const addExpense = () => {
+    const label = newLabel.trim();
+    if (!label || newSplit.length === 0 || newTotal <= 0) {
+      toast.error("Need a label, total > 0, and at least one person");
+      return;
+    }
+    if (expenses.some((e) => e.label === label)) {
+      toast.error("That label already exists");
+      return;
+    }
+    setExpenses([
+      ...expenses,
+      {
+        label,
+        total: newTotal,
+        payer: newPayer,
+        perPerson: Math.round((newTotal / newSplit.length) * 100) / 100,
+        splitAmong: newSplit,
+      },
+    ]);
+    setAdding(false);
+    setNewLabel("");
+    setNewTotal(0);
+    setNewSplit([...NAMES]);
+    toast.success(`Added ${label}`);
+  };
+
+  const removeExpense = (label: string) => {
+    if (!confirm(`Delete "${label}"?`)) return;
+    setExpenses(expenses.filter((e) => e.label !== label));
+  };
 
   return (
     <div className="space-y-8">
       <section className="rounded-lg border border-border bg-card/40 p-6">
-        <h2 className="font-display text-3xl text-foreground sm:text-4xl">
-          <em className="text-[var(--gold)]">Payments</em>
-        </h2>
+        <div className="flex flex-wrap items-baseline justify-between gap-3">
+          <h2 className="font-display text-3xl text-foreground sm:text-4xl">
+            <em className="text-[var(--gold)]">Payments</em>
+          </h2>
+          <div className="flex gap-1 rounded-md border border-border bg-background/30 p-1">
+            <button
+              onClick={() => setView("checklist")}
+              className={`rounded px-2.5 py-1 text-[11px] uppercase tracking-wider transition ${
+                view === "checklist"
+                  ? "bg-[var(--gold)] text-[var(--olive-deep)]"
+                  : "text-muted-foreground"
+              }`}
+            >
+              Checklist
+            </button>
+            <button
+              onClick={() => setView("list")}
+              className={`rounded px-2.5 py-1 text-[11px] uppercase tracking-wider transition ${
+                view === "list"
+                  ? "bg-[var(--gold)] text-[var(--olive-deep)]"
+                  : "text-muted-foreground"
+              }`}
+            >
+              List
+            </button>
+          </div>
+        </div>
         <p className="mt-1 text-xs uppercase tracking-[0.2em] text-[var(--gold-soft)]">
           {totalPaid} of {totalRequired} paid
-          {isAdmin && <span className="ml-2 normal-case tracking-normal text-[var(--gold)]">· admin: tap any to toggle</span>}
+          {isAdmin && (
+            <span className="ml-2 normal-case tracking-normal text-[var(--gold)]">
+              · admin: tap any to toggle
+            </span>
+          )}
         </p>
-        <ul className="mt-5 space-y-5">
-          {visibleNames.map((n) => {
-            const isMe = n === user;
-            const canToggle = isMe || isAdmin;
-            const expenses = EXPENSES.filter((e) => e.splitAmong.includes(n));
-            return (
-              <li key={n} className="border-b border-border pb-4 last:border-0">
-                <div className="flex items-baseline justify-between">
-                  <span className="text-sm font-medium text-foreground">
-                    {n} {isMe && <span className="text-[var(--gold)]">(you)</span>}
-                  </span>
-                </div>
-                <ul className="mt-2 space-y-1.5">
-                  {expenses.map((e) => {
-                    const hasPaid = !!paid[n]?.[e.label];
-                    return (
-                      <li
-                        key={e.label}
-                        className="flex items-center justify-between text-sm"
-                      >
-                        <span className="text-muted-foreground">
-                          {e.label}
-                          <span className="ml-2 text-xs tabular-nums text-[var(--gold-soft)]">
-                            ${e.perPerson}
-                          </span>
-                        </span>
-                        <button
-                          onClick={() => canToggle && onToggle(n, e.label)}
-                          disabled={!canToggle}
-                          className={`rounded-full border px-3 py-1 text-xs font-medium uppercase tracking-wider transition ${
-                            hasPaid
-                              ? "border-green-700/40 bg-green-900/20 text-green-400"
-                              : "border-border bg-background/30 text-muted-foreground"
-                          } ${canToggle ? "cursor-pointer hover:border-[var(--gold)]" : "cursor-default"}`}
+
+        {view === "checklist" ? (
+          <div className="mt-5 overflow-x-auto">
+            <table className="w-full border-collapse text-sm">
+              <thead>
+                <tr>
+                  <th className="border-b border-border px-2 py-2 text-left text-[11px] uppercase tracking-wider text-muted-foreground">
+                    Name
+                  </th>
+                  {expenses.map((e) => (
+                    <th
+                      key={e.label}
+                      className="border-b border-border px-2 py-2 text-center text-[11px] uppercase tracking-wider text-[var(--gold-soft)]"
+                    >
+                      <div>{e.label}</div>
+                      <div className="text-muted-foreground normal-case tracking-normal">
+                        ${e.perPerson}
+                      </div>
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {visibleNames.map((n) => {
+                  const isMe = n === user;
+                  const canToggle = isMe || isAdmin;
+                  return (
+                    <tr key={n}>
+                      <td className="border-b border-border px-2 py-2 text-foreground">
+                        {n} {isMe && <span className="text-[var(--gold)]">(you)</span>}
+                      </td>
+                      {expenses.map((e) => {
+                        const inSplit = e.splitAmong.includes(n);
+                        const hasPaid = !!paid[n]?.[e.label];
+                        if (!inSplit) {
+                          return (
+                            <td
+                              key={e.label}
+                              className="border-b border-border px-2 py-2 text-center text-muted-foreground/40"
+                            >
+                              —
+                            </td>
+                          );
+                        }
+                        return (
+                          <td
+                            key={e.label}
+                            className="border-b border-border px-2 py-2 text-center"
+                          >
+                            <button
+                              onClick={() => canToggle && onToggle(n, e.label)}
+                              disabled={!canToggle}
+                              className={`inline-flex h-6 w-6 items-center justify-center rounded border text-xs transition ${
+                                hasPaid
+                                  ? "border-green-700/50 bg-green-900/30 text-green-400"
+                                  : "border-border bg-background/30 text-muted-foreground"
+                              } ${canToggle ? "cursor-pointer hover:border-[var(--gold)]" : "cursor-default"}`}
+                              aria-label={hasPaid ? "Paid" : "Not paid"}
+                            >
+                              {hasPaid ? "✓" : ""}
+                            </button>
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <ul className="mt-5 space-y-5">
+            {visibleNames.map((n) => {
+              const isMe = n === user;
+              const canToggle = isMe || isAdmin;
+              const userExpenses = expenses.filter((e) => e.splitAmong.includes(n));
+              return (
+                <li key={n} className="border-b border-border pb-4 last:border-0">
+                  <div className="flex items-baseline justify-between">
+                    <span className="text-sm font-medium text-foreground">
+                      {n} {isMe && <span className="text-[var(--gold)]">(you)</span>}
+                    </span>
+                  </div>
+                  <ul className="mt-2 space-y-1.5">
+                    {userExpenses.map((e) => {
+                      const hasPaid = !!paid[n]?.[e.label];
+                      return (
+                        <li
+                          key={e.label}
+                          className="flex items-center justify-between text-sm"
                         >
-                          {hasPaid ? "Paid" : "Not paid"}
-                        </button>
-                      </li>
+                          <span className="text-muted-foreground">
+                            {e.label}
+                            <span className="ml-2 text-xs tabular-nums text-[var(--gold-soft)]">
+                              ${e.perPerson}
+                            </span>
+                          </span>
+                          <button
+                            onClick={() => canToggle && onToggle(n, e.label)}
+                            disabled={!canToggle}
+                            className={`rounded-full border px-3 py-1 text-xs font-medium uppercase tracking-wider transition ${
+                              hasPaid
+                                ? "border-green-700/40 bg-green-900/20 text-green-400"
+                                : "border-border bg-background/30 text-muted-foreground"
+                            } ${canToggle ? "cursor-pointer hover:border-[var(--gold)]" : "cursor-default"}`}
+                          >
+                            {hasPaid ? "Paid" : "Not paid"}
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
+
+      {isAdmin && (
+        <section className="rounded-lg border border-border bg-card/40 p-6">
+          <div className="flex items-baseline justify-between">
+            <h3 className="font-display text-2xl text-foreground">
+              <em className="text-[var(--gold)]">Manage expenses</em>
+            </h3>
+            {!adding && (
+              <button
+                onClick={() => setAdding(true)}
+                className="rounded-md bg-[var(--gold)] px-3 py-1.5 text-xs uppercase tracking-wider text-[var(--olive-deep)]"
+              >
+                + Add expense
+              </button>
+            )}
+          </div>
+
+          {adding && (
+            <div className="mt-4 space-y-3 rounded-md border border-[var(--gold)]/30 bg-background/60 p-4">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="mb-1 block text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                    Label
+                  </label>
+                  <input
+                    value={newLabel}
+                    onChange={(e) => setNewLabel(e.target.value)}
+                    placeholder="e.g. Brunch"
+                    className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-[var(--gold)]"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                    Total ($)
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={newTotal || ""}
+                    onChange={(e) => setNewTotal(parseFloat(e.target.value) || 0)}
+                    className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-[var(--gold)]"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                    Paid by
+                  </label>
+                  <select
+                    value={newPayer}
+                    onChange={(e) => setNewPayer(e.target.value as Name)}
+                    className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-[var(--gold)]"
+                  >
+                    {NAMES.map((n) => (
+                      <option key={n} value={n}>
+                        {n}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-1 block text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                    Per person
+                  </label>
+                  <div className="rounded-md border border-border bg-background/40 px-3 py-2 text-sm text-[var(--gold-soft)]">
+                    $
+                    {newSplit.length > 0
+                      ? (Math.round((newTotal / newSplit.length) * 100) / 100).toFixed(2)
+                      : "—"}
+                  </div>
+                </div>
+              </div>
+              <div>
+                <label className="mb-1 block text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                  Split among ({newSplit.length})
+                </label>
+                <div className="flex flex-wrap gap-1.5">
+                  {NAMES.map((n) => {
+                    const on = newSplit.includes(n);
+                    return (
+                      <button
+                        key={n}
+                        type="button"
+                        onClick={() =>
+                          setNewSplit(
+                            on ? newSplit.filter((x) => x !== n) : [...newSplit, n],
+                          )
+                        }
+                        className={`rounded-full border px-2.5 py-1 text-xs transition ${
+                          on
+                            ? "border-[var(--gold)] bg-[var(--gold)]/10 text-[var(--gold-soft)]"
+                            : "border-border bg-background/30 text-muted-foreground"
+                        }`}
+                      >
+                        {n}
+                      </button>
                     );
                   })}
-                </ul>
-              </li>
-            );
-          })}
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={addExpense}
+                  className="rounded-md bg-[var(--gold)] px-3 py-2 text-xs uppercase tracking-wider text-[var(--olive-deep)]"
+                >
+                  Save
+                </button>
+                <button
+                  onClick={() => setAdding(false)}
+                  className="rounded-md border border-border px-3 py-2 text-xs uppercase tracking-wider text-muted-foreground"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
 
-        </ul>
-      </section>
+          <ul className="mt-4 divide-y divide-border">
+            {expenses.map((e) => (
+              <li key={e.label} className="flex items-baseline justify-between gap-3 py-3 text-sm">
+                <div className="min-w-0">
+                  <span className="text-foreground">{e.label}</span>
+                  <span className="ml-2 text-xs text-muted-foreground">
+                    ${e.total} · ${e.perPerson}/person · {e.splitAmong.length} people · paid by {e.payer}
+                  </span>
+                </div>
+                <button
+                  onClick={() => removeExpense(e.label)}
+                  className="shrink-0 text-xs text-muted-foreground hover:text-red-400"
+                >
+                  Delete
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
     </div>
   );
 }
+
 
