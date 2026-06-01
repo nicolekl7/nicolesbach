@@ -740,7 +740,7 @@ const CARS: { name: string; people: string; leave: string; arrive: string }[] = 
   { name: "Car #4", people: "Charlene", leave: "1:00 PM", arrive: "4:00 PM" },
 ];
 
-function DetailsTab({ claims, paid, user }: { claims: Record<string, Claim[]>; paid: PaidMap; user: Name | "" }) {
+function DetailsTab({ claims, paid, user, expenses }: { claims: Record<string, Claim[]>; paid: PaidMap; user: Name | ""; expenses: Expense[] }) {
   const [selectedGirl, setSelectedGirl] = useState<Name | null>(null);
   const lockedToUser = user !== "" && user !== ADMIN;
   const activeGirl = lockedToUser ? (user as Name) : selectedGirl;
