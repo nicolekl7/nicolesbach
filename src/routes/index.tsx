@@ -163,6 +163,8 @@ export default function BachelorettePage() {
   const [formAmount, setFormAmount] = useState(1);
   const [formNote, setFormNote] = useState("");
   const [paid, setPaid] = useState<PaidMap>(ALL_PAID_FALSE);
+  const [spendPw, setSpendPw] = useState("");
+  const spendUnlocked = spendPw === "nyler";
 
 
   const allItems = useMemo(() => SECTIONS.flatMap((s) => s.items), []);
