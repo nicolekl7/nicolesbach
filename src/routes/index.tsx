@@ -359,6 +359,7 @@ export default function BachelorettePage() {
             }
           />
         )}
+
       </main>
 
 
