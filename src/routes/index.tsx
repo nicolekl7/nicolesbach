@@ -422,10 +422,6 @@ export default function BachelorettePage() {
           <h1 className="font-display mt-5 text-5xl leading-tight text-foreground sm:text-7xl">
             Nicole's <em className="text-[var(--gold)]">Bachelorette</em>
           </h1>
-          <p className="mt-5 text-base text-muted-foreground sm:text-lg">
-            Sign up below · claim as many as you'd like · we've got this
-          </p>
-
           {/* Name selector */}
           <div className="mx-auto mt-10 max-w-sm">
             <label className="mb-2 block text-xs uppercase tracking-[0.25em] text-muted-foreground">
