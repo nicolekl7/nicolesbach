@@ -198,6 +198,7 @@ type Theme = {
   event: string;
   themeName: string;
   description: string;
+  icon?: string;
   imageUrl?: string;
 };
 
@@ -207,6 +208,7 @@ const DEFAULT_THEMES: Theme[] = [
     event: "Thursday night",
     themeName: "Sunset",
     description: "Sunset tones — warm oranges, pinks, and golds. Think sundress or cute going-out look.",
+    icon: "🌅",
     imageUrl: "",
   },
   {
@@ -214,6 +216,7 @@ const DEFAULT_THEMES: Theme[] = [
     event: "Friday night",
     themeName: "Glitter",
     description: "Go glam. Glitter, shimmer, sequins — anything that catches the light.",
+    icon: "✨",
     imageUrl: "",
   },
   {
@@ -221,6 +224,7 @@ const DEFAULT_THEMES: Theme[] = [
     event: "Boat · Saturday",
     themeName: "Tini Bikinis",
     description: "Green bathing suits & cover-ups. Matching energy encouraged.",
+    icon: "🍸",
     imageUrl: "",
   },
   {
@@ -228,6 +232,7 @@ const DEFAULT_THEMES: Theme[] = [
     event: "Bonfire · Saturday night",
     themeName: "Games & PJs",
     description: "Comfy cozy. PJs, sweats, whatever you're sleeping in.",
+    icon: "🌙",
     imageUrl: "",
   },
 ];
@@ -1908,15 +1913,28 @@ function VibesTab({
             <div className="space-y-3">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 space-y-2">
-                  <div>
-                    <label className="mb-1 block text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-                      Event
-                    </label>
-                    <EditableField
-                      value={theme.event}
-                      onChange={(v) => updateTheme(idx, { ...theme, event: v })}
-                      className="text-xs uppercase tracking-[0.2em] text-[var(--gold-soft)]"
-                    />
+                  <div className="flex gap-3">
+                    <div className="w-16">
+                      <label className="mb-1 block text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                        Icon
+                      </label>
+                      <input
+                        value={theme.icon ?? ""}
+                        onChange={(e) => updateTheme(idx, { ...theme, icon: e.target.value })}
+                        placeholder="🍸"
+                        className="w-full rounded-md border border-border bg-background px-2 py-2 text-center text-lg outline-none focus:border-[var(--gold)]"
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <label className="mb-1 block text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                        Event
+                      </label>
+                      <EditableField
+                        value={theme.event}
+                        onChange={(v) => updateTheme(idx, { ...theme, event: v })}
+                        className="text-xs uppercase tracking-[0.2em] text-[var(--gold-soft)]"
+                      />
+                    </div>
                   </div>
                   <div>
                     <label className="mb-1 block text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
@@ -1971,13 +1989,20 @@ function VibesTab({
             </div>
           ) : (
             <>
-              <p className="text-xs uppercase tracking-[0.2em] text-[var(--gold-soft)]">
-                {theme.event}
-              </p>
-              <h2 className="font-display mt-1 text-3xl text-[var(--gold)] sm:text-4xl">
-                <em>{theme.themeName}</em>
-              </h2>
-              <p className="mt-2 text-sm text-muted-foreground">{theme.description}</p>
+              <div className="flex items-center gap-3">
+                {theme.icon && (
+                  <span className="text-3xl" aria-hidden>{theme.icon}</span>
+                )}
+                <div>
+                  <p className="text-xs uppercase tracking-[0.2em] text-[var(--gold-soft)]">
+                    {theme.event}
+                  </p>
+                  <h2 className="font-display mt-0.5 text-3xl text-[var(--gold)] sm:text-4xl">
+                    <em>{theme.themeName}</em>
+                  </h2>
+                </div>
+              </div>
+              <p className="mt-3 text-sm text-muted-foreground">{theme.description}</p>
               {theme.imageUrl && (
                 <img
                   src={theme.imageUrl}
