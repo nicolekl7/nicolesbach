@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/")({
@@ -268,6 +268,21 @@ const INITIAL_EXPENSES: Expense[] = [
   },
 ];
 
+function useLocalState<T>(key: string, defaultValue: T) {
+  const [value, setValue] = useState<T>(() => {
+    try {
+      const saved = localStorage.getItem(key);
+      return saved ? (JSON.parse(saved) as T) : defaultValue;
+    } catch {
+      return defaultValue;
+    }
+  });
+  useEffect(() => {
+    try { localStorage.setItem(key, JSON.stringify(value)); } catch {}
+  }, [key, value]);
+  return [value, setValue] as const;
+}
+
 function MartiniGlass({ className = "" }: { className?: string }) {
   return (
     <svg
@@ -305,12 +320,12 @@ export default function BachelorettePage() {
   const [adminPw, setAdminPw] = useState("");
   const [adminPwError, setAdminPwError] = useState(false);
 
-  // Editable content state
-  const [themes, setThemes] = useState<Theme[]>(DEFAULT_THEMES);
-  const [sections, setSections] = useState<Section[]>(DEFAULT_SECTIONS);
-  const [itinerary, setItinerary] = useState<ItinDay[]>(DEFAULT_ITINERARY);
-  const [cars, setCars] = useState(DEFAULT_CARS);
-  const [houseInfo, setHouseInfo] = useState(DEFAULT_HOUSE);
+  // Editable content state — persisted to localStorage
+  const [themes, setThemes] = useLocalState<Theme[]>("bach-themes", DEFAULT_THEMES);
+  const [sections, setSections] = useLocalState<Section[]>("bach-sections", DEFAULT_SECTIONS);
+  const [itinerary, setItinerary] = useLocalState<ItinDay[]>("bach-itinerary", DEFAULT_ITINERARY);
+  const [cars, setCars] = useLocalState<typeof DEFAULT_CARS>("bach-cars", DEFAULT_CARS);
+  const [houseInfo, setHouseInfo] = useLocalState<typeof DEFAULT_HOUSE>("bach-house", DEFAULT_HOUSE);
 
   const allItems = useMemo(() => sections.flatMap((s) => s.items), [sections]);
   const finiteItems = useMemo(
