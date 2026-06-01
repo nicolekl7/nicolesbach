@@ -193,6 +193,45 @@ const DEFAULT_HOUSE = {
   checkOut: "Sunday, August 2 · 10:00 AM",
 };
 
+type Theme = {
+  id: string;
+  event: string;
+  themeName: string;
+  description: string;
+  imageUrl?: string;
+};
+
+const DEFAULT_THEMES: Theme[] = [
+  {
+    id: "thu-night",
+    event: "Thursday night",
+    themeName: "Sunset",
+    description: "Sunset tones — warm oranges, pinks, and golds. Think sundress or cute going-out look.",
+    imageUrl: "",
+  },
+  {
+    id: "fri-night",
+    event: "Friday night",
+    themeName: "Glitter",
+    description: "Go glam. Glitter, shimmer, sequins — anything that catches the light.",
+    imageUrl: "",
+  },
+  {
+    id: "sat-boat",
+    event: "Boat · Saturday",
+    themeName: "Tini Bikinis",
+    description: "Green bathing suits & cover-ups. Matching energy encouraged.",
+    imageUrl: "",
+  },
+  {
+    id: "sat-bonfire",
+    event: "Bonfire · Saturday night",
+    themeName: "Games & PJs",
+    description: "Comfy cozy. PJs, sweats, whatever you're sleeping in.",
+    imageUrl: "",
+  },
+];
+
 type Expense = {
   label: string;
   total: number;
@@ -248,7 +287,7 @@ function MartiniGlass({ className = "" }: { className?: string }) {
 export default function BachelorettePage() {
   const [user, setUser] = useState<Name | "">("");
   const [claims, setClaims] = useState<Record<string, Claim[]>>(INITIAL_CLAIMS);
-  const [tab, setTab] = useState<"details" | "itinerary" | "signup" | "who" | "payments">("details");
+  const [tab, setTab] = useState<"details" | "itinerary" | "signup" | "who" | "vibes" | "payments">("details");
   const [formFor, setFormFor] = useState<string | null>(null);
   const [formAmount, setFormAmount] = useState(1);
   const [formNote, setFormNote] = useState("");
@@ -262,6 +301,7 @@ export default function BachelorettePage() {
   const [adminPwError, setAdminPwError] = useState(false);
 
   // Editable content state
+  const [themes, setThemes] = useState<Theme[]>(DEFAULT_THEMES);
   const [sections, setSections] = useState<Section[]>(DEFAULT_SECTIONS);
   const [itinerary, setItinerary] = useState<ItinDay[]>(DEFAULT_ITINERARY);
   const [cars, setCars] = useState(DEFAULT_CARS);
@@ -458,6 +498,9 @@ export default function BachelorettePage() {
           <TabBtn active={tab === "who"} onClick={() => setTab("who")}>
             Who's bringing
           </TabBtn>
+          <TabBtn active={tab === "vibes"} onClick={() => setTab("vibes")}>
+            Vibes
+          </TabBtn>
           {adminMode && (
             <TabBtn active={tab === "payments"} onClick={() => setTab("payments")}>
               Payments
@@ -596,6 +639,12 @@ export default function BachelorettePage() {
           </>
         )}
         {tab === "who" && <WhoTab claims={claims} user={user} sections={sections} />}
+        {tab === "vibes" && (
+          <VibesTab
+            themes={themes}
+            setThemes={adminMode ? setThemes : undefined}
+          />
+        )}
         {tab === "payments" && adminMode && (
           <SpendTab
             paid={paid}
@@ -1831,6 +1880,136 @@ function SpendTab({
           ))}
         </ul>
       </section>
+    </div>
+  );
+}
+
+// ---------- Vibes ----------
+
+function VibesTab({
+  themes,
+  setThemes,
+}: {
+  themes: Theme[];
+  setThemes?: (t: Theme[]) => void;
+}) {
+  const adminMode = !!setThemes;
+
+  const updateTheme = (idx: number, updated: Theme) => {
+    if (!setThemes) return;
+    setThemes(themes.map((t, i) => (i === idx ? updated : t)));
+  };
+
+  return (
+    <div className="space-y-6">
+      {themes.map((theme, idx) => (
+        <section key={theme.id} className="rounded-lg border border-border bg-card/40 p-6">
+          {adminMode ? (
+            <div className="space-y-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1 space-y-2">
+                  <div>
+                    <label className="mb-1 block text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                      Event
+                    </label>
+                    <EditableField
+                      value={theme.event}
+                      onChange={(v) => updateTheme(idx, { ...theme, event: v })}
+                      className="text-xs uppercase tracking-[0.2em] text-[var(--gold-soft)]"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                      Theme name
+                    </label>
+                    <EditableField
+                      value={theme.themeName}
+                      onChange={(v) => updateTheme(idx, { ...theme, themeName: v })}
+                      className="font-display text-3xl text-[var(--gold)]"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                      Description
+                    </label>
+                    <EditableField
+                      value={theme.description}
+                      onChange={(v) => updateTheme(idx, { ...theme, description: v })}
+                      className="text-sm text-muted-foreground"
+                      multiline
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                      Image URL (collage / mood board)
+                    </label>
+                    <input
+                      type="url"
+                      value={theme.imageUrl ?? ""}
+                      onChange={(e) => updateTheme(idx, { ...theme, imageUrl: e.target.value })}
+                      placeholder="https://..."
+                      className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-[var(--gold)]"
+                    />
+                  </div>
+                </div>
+                <button
+                  onClick={() => setThemes(themes.filter((_, i) => i !== idx))}
+                  className="shrink-0 text-xs text-muted-foreground/50 hover:text-red-400"
+                  aria-label="Delete theme"
+                >
+                  ✕
+                </button>
+              </div>
+              {theme.imageUrl && (
+                <img
+                  src={theme.imageUrl}
+                  alt={`${theme.themeName} mood board`}
+                  className="mt-2 w-full rounded-lg object-cover"
+                  style={{ maxHeight: "288px" }}
+                />
+              )}
+            </div>
+          ) : (
+            <>
+              <p className="text-xs uppercase tracking-[0.2em] text-[var(--gold-soft)]">
+                {theme.event}
+              </p>
+              <h2 className="font-display mt-1 text-3xl text-[var(--gold)] sm:text-4xl">
+                <em>{theme.themeName}</em>
+              </h2>
+              <p className="mt-2 text-sm text-muted-foreground">{theme.description}</p>
+              {theme.imageUrl && (
+                <img
+                  src={theme.imageUrl}
+                  alt={`${theme.themeName} mood board`}
+                  className="mt-4 w-full rounded-lg object-cover"
+                  style={{ maxHeight: "288px" }}
+                />
+              )}
+            </>
+          )}
+        </section>
+      ))}
+
+      {adminMode && setThemes && (
+        <button
+          onClick={() =>
+            setThemes([
+              ...themes,
+              {
+                id: `theme-${Date.now()}`,
+                event: "Event",
+                themeName: "Theme",
+                description: "",
+                imageUrl: "",
+              },
+            ])
+          }
+          className="w-full rounded-lg border border-dashed border-[var(--gold)]/40 py-3 text-xs uppercase tracking-wider text-[var(--gold)] hover:bg-[var(--gold)]/5"
+        >
+          + Add theme
+        </button>
+      )}
     </div>
   );
 }
