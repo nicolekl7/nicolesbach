@@ -1889,6 +1889,15 @@ function SpendTab({
   );
 }
 
+function toDirectImageUrl(url: string): string {
+  // Convert Google Drive view links to direct embed URLs
+  const driveMatch = url.match(/drive\.google\.com\/file\/d\/([^/]+)/);
+  if (driveMatch) {
+    return `https://drive.google.com/uc?export=view&id=${driveMatch[1]}`;
+  }
+  return url;
+}
+
 // ---------- Vibes ----------
 
 function VibesTab({
@@ -1980,7 +1989,7 @@ function VibesTab({
               </div>
               {theme.imageUrl && (
                 <img
-                  src={theme.imageUrl}
+                  src={toDirectImageUrl(theme.imageUrl!)}
                   alt={`${theme.themeName} mood board`}
                   className="mt-2 w-full rounded-lg object-cover"
                   style={{ maxHeight: "288px" }}
@@ -2005,7 +2014,7 @@ function VibesTab({
               <p className="mt-3 text-sm text-muted-foreground">{theme.description}</p>
               {theme.imageUrl && (
                 <img
-                  src={theme.imageUrl}
+                  src={toDirectImageUrl(theme.imageUrl!)}
                   alt={`${theme.themeName} mood board`}
                   className="mt-4 w-full rounded-lg object-cover"
                   style={{ maxHeight: "288px" }}
