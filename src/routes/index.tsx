@@ -378,6 +378,8 @@ export default function BachelorettePage() {
           <SpendTab
             paid={paid}
             user={user}
+            expenses={expenses}
+            setExpenses={setExpenses}
             onToggle={(n, label) =>
               setPaid({
                 ...paid,
