@@ -717,7 +717,8 @@ function DetailsTab({ claims, paid, user }: { claims: Record<string, Claim[]>; p
   const activeGirl = lockedToUser ? (user as Name) : selectedGirl;
 
 
-  if (selectedGirl) {
+  if (activeGirl) {
+    const selectedGirl = activeGirl;
     const car = CARS.find((c) => c.people.includes(selectedGirl));
     const items: { label: string; note?: string }[] = [];
     for (const section of SECTIONS) {
@@ -733,16 +734,18 @@ function DetailsTab({ claims, paid, user }: { claims: Record<string, Claim[]>; p
     const expenses = EXPENSES.filter((e) => e.splitAmong.includes(selectedGirl));
     const earlyLeavers = ["Phoebe", "Taylor", "Casey"];
     const leavesEarly = earlyLeavers.includes(selectedGirl);
-    const totalOwed = expenses.reduce((s, e) => s + e.perPerson, 0);
 
     return (
       <div className="space-y-8">
-        <button
-          onClick={() => setSelectedGirl(null)}
-          className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-xs uppercase tracking-wider text-muted-foreground transition hover:border-[var(--gold)] hover:text-[var(--gold)]"
-        >
-          ← Back to details
-        </button>
+        {!lockedToUser && (
+          <button
+            onClick={() => setSelectedGirl(null)}
+            className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-xs uppercase tracking-wider text-muted-foreground transition hover:border-[var(--gold)] hover:text-[var(--gold)]"
+          >
+            ← Back to details
+          </button>
+        )}
+
 
         <div className="text-center">
           <h2 className="font-display text-5xl text-[var(--gold)] sm:text-6xl">
