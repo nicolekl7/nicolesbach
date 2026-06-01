@@ -15,7 +15,7 @@
       // Run `wrangler kv namespace create BACH_KV` to get these IDs,
       // then replace the placeholders below.
       "id": "cf4afc045d90488aa25ac8467d133fd4",
-      "preview_id": "cf4afc045d90488aa25ac8467d133fd4D"
+      "preview_id": "cf4afc045d90488aa25ac8467d133fd4"
     }
   ]
 }

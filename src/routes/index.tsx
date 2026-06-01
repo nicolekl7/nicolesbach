@@ -294,7 +294,7 @@ function MartiniGlass({ className = "" }: { className?: string }) {
 export default function BachelorettePage() {
   const [user, setUser] = useState<Name | "">("");
   const [claims, setClaims] = useState<Record<string, Claim[]>>(INITIAL_CLAIMS);
-  const [tab, setTab] = useState<"details" | "itinerary" | "signup" | "who" | "vibes" | "payments">("details");
+  const [tab, setTab] = useState<"details" | "itinerary" | "signup" | "vibes" | "payments">("details");
   const [formFor, setFormFor] = useState<string | null>(null);
   const [formAmount, setFormAmount] = useState(1);
   const [formNote, setFormNote] = useState("");
@@ -350,7 +350,10 @@ export default function BachelorettePage() {
               houseInfo: patch.houseInfo ?? houseInfo,
             },
           },
-        }).catch(() => {});
+        }).catch((err) => {
+          console.error("Save failed:", err);
+          toast.error("Couldn't save — check console for details");
+        });
       }, 800);
     },
     [adminMode, themes, sections, itinerary, cars, houseInfo],
@@ -549,9 +552,6 @@ export default function BachelorettePage() {
           </TabBtn>
           <TabBtn active={tab === "signup"} onClick={() => setTab("signup")}>
             Item signup
-          </TabBtn>
-          <TabBtn active={tab === "who"} onClick={() => setTab("who")}>
-            Who's bringing
           </TabBtn>
           <TabBtn active={tab === "vibes"} onClick={() => setTab("vibes")}>
             Vibes

@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { getRequest } from "@tanstack/react-start/server";
+import { getRequestEvent } from "@tanstack/react-start/server";
 import { z } from "zod";
 
 const ADMIN_PASSWORD = "nyler";
@@ -8,9 +8,10 @@ const KV_KEY = "bach_content_v1";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function getKV(): any | null {
   try {
-    // All previous methods have been consolidated into getRequest()
-    const request = getRequest();
-    return (request as any)?.context?.cloudflare?.env?.BACH_KV ?? null;
+    const event = getRequestEvent();
+    // Nitro Cloudflare Workers adapter exposes bindings at event.context.cloudflare.env
+    const env = (event as any)?.context?.cloudflare?.env;
+    return env?.BACH_KV ?? null;
   } catch {
     return null;
   }
@@ -39,7 +40,7 @@ export const saveContent = createServerFn({ method: "POST" })
       throw new Error("Unauthorized");
     }
     const kv = getKV();
-    if (!kv) throw new Error("Storage not configured");
+    if (!kv) throw new Error("KV binding not available — check BACH_KV is configured in wrangler.jsonc");
     await kv.put(KV_KEY, JSON.stringify(data.content));
     return { ok: true };
   });
