@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
-import { getRequest } from "@tanstack/react-start/server";
+// @ts-ignore
+import { getEvent } from "vinxi/http";
 import { z } from "zod";
 
 const ADMIN_PASSWORD = "nyler";
@@ -8,31 +9,27 @@ const KV_KEY = "bach_content_v1";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function getKV(): any | null {
   try {
-    const request = getRequest() as any;
+    const event = getEvent();
+    const ctx = (event as any)?.context;
 
-    // Log every top-level key on the request so we can find where CF bindings live
-    console.log("[getKV] request keys:", Object.keys(request ?? {}));
-    console.log("[getKV] globalThis.process.env keys:", Object.keys((globalThis as any).process?.env ?? {}));
+    // The Ultimate Catch-All: Check every place Cloudflare or Nitro could hide the database
+    const db = ctx?.cloudflare?.env?.BACH_KV 
+      || ctx?.env?.BACH_KV 
+      || (globalThis as any)?.BACH_KV 
+      || (globalThis as any)?.__env__?.BACH_KV 
+      || (globalThis as any)?.process?.env?.BACH_KV;
 
-    // Try every plausible path
-    const candidates = [
-      (globalThis as any).process?.env?.BACH_KV,
-      request?.runtime?.cloudflare?.env?.BACH_KV,
-      request?.context?.cloudflare?.env?.BACH_KV,
-      request?.cf?.env?.BACH_KV,
-      request?.env?.BACH_KV,
-      (globalThis as any).__env__?.BACH_KV,
-      (globalThis as any).BACH_KV,
-    ];
-
-    console.log("[getKV] candidate results:", candidates.map((c, i) => `[${i}]: ${c != null ? "FOUND" : "null"}`));
-
-    for (const c of candidates) {
-      if (c != null) return c;
+    if (!db) {
+      console.error("🚨 DATABASE NOT FOUND IN CONTEXT!");
+      console.error("- Context keys available:", ctx ? Object.keys(ctx) : "none");
+      if (ctx?.cloudflare?.env) {
+         console.error("- Cloudflare Env keys available:", Object.keys(ctx.cloudflare.env));
+      }
     }
-    return null;
+
+    return db || null;
   } catch (err) {
-    console.error("[getKV] Error:", err);
+    console.error("Error accessing KV binding:", err);
     return null;
   }
 }
@@ -40,14 +37,14 @@ function getKV(): any | null {
 export const loadContent = createServerFn({ method: "GET" }).handler(async () => {
   const kv = getKV();
   if (!kv) {
-    console.warn("[loadContent] KV not found, returning null");
+    console.warn("KV Storage not found during load! Falling back to default.");
     return null;
   }
   try {
     const raw = await kv.get(KV_KEY);
     return raw ? JSON.parse(raw) : null;
   } catch (err) {
-    console.error("[loadContent] KV read failed:", err);
+    console.error("Failed to read from KV:", err);
     return null;
   }
 });
@@ -63,15 +60,14 @@ export const saveContent = createServerFn({ method: "POST" })
     if (data.password !== ADMIN_PASSWORD) {
       throw new Error("Unauthorized");
     }
-
+    
     const kv = getKV();
     if (!kv) {
-      console.error("[saveContent] KV binding not found — cannot save");
       throw new Error("Storage not configured");
     }
-
+    
     await kv.put(KV_KEY, JSON.stringify(data.content));
-    console.log("[saveContent] ✅ Saved to KV");
-
+    console.log("✅ Successfully saved content to Cloudflare KV!");
+    
     return { ok: true };
   });
