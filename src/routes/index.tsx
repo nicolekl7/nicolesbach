@@ -760,7 +760,7 @@ function DetailsTab({ claims, paid, user, expenses }: { claims: Record<string, C
         }
       }
     }
-    const expenses = EXPENSES.filter((e) => e.splitAmong.includes(selectedGirl));
+    const userExpenses = expenses.filter((e) => e.splitAmong.includes(selectedGirl));
     const earlyLeavers = ["Phoebe", "Taylor", "Casey"];
     const leavesEarly = earlyLeavers.includes(selectedGirl);
 
