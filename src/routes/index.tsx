@@ -35,6 +35,8 @@ const NAMES = [
   "Taylor",
 ] as const;
 type Name = (typeof NAMES)[number];
+const ADMIN: Name = "Sabrina";
+
 
 type PaidMap = Record<Name, Record<string, boolean>>;
 const ALL_PAID_FALSE = Object.fromEntries(
@@ -295,7 +297,7 @@ export default function BachelorettePage() {
       </div>
 
       <main className="relative z-10 mx-auto max-w-3xl px-5 py-8 pb-24">
-        {tab === "details" && <DetailsTab claims={claims} paid={paid} />}
+        {tab === "details" && <DetailsTab claims={claims} paid={paid} user={user} />}
         {tab === "itinerary" && <ItineraryTab />}
         {tab === "signup" && (
           <>
@@ -359,6 +361,7 @@ export default function BachelorettePage() {
             }
           />
         )}
+
       </main>
 
 
@@ -637,10 +640,12 @@ function WhoTab({
     return map;
   }, [claims]);
 
+  const visibleNames = user && user !== ADMIN ? [user as Name] : NAMES;
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-      {NAMES.map((name) => {
+      {visibleNames.map((name) => {
         const isMe = name === user;
+
         const items = itemsByPerson[name];
         const totalClaims = items.reduce((sum, it) => sum + it.count, 0);
         return (
@@ -708,10 +713,14 @@ const CARS: { name: string; people: string; leave: string; arrive: string }[] = 
   { name: "Car #4", people: "Charlene", leave: "1:00 PM", arrive: "4:00 PM" },
 ];
 
-function DetailsTab({ claims, paid }: { claims: Record<string, Claim[]>; paid: PaidMap }) {
+function DetailsTab({ claims, paid, user }: { claims: Record<string, Claim[]>; paid: PaidMap; user: Name | "" }) {
   const [selectedGirl, setSelectedGirl] = useState<Name | null>(null);
+  const lockedToUser = user !== "" && user !== ADMIN;
+  const activeGirl = lockedToUser ? (user as Name) : selectedGirl;
 
-  if (selectedGirl) {
+
+  if (activeGirl) {
+    const selectedGirl = activeGirl;
     const car = CARS.find((c) => c.people.includes(selectedGirl));
     const items: { label: string; note?: string }[] = [];
     for (const section of SECTIONS) {
@@ -727,16 +736,18 @@ function DetailsTab({ claims, paid }: { claims: Record<string, Claim[]>; paid: P
     const expenses = EXPENSES.filter((e) => e.splitAmong.includes(selectedGirl));
     const earlyLeavers = ["Phoebe", "Taylor", "Casey"];
     const leavesEarly = earlyLeavers.includes(selectedGirl);
-    const totalOwed = expenses.reduce((s, e) => s + e.perPerson, 0);
 
     return (
       <div className="space-y-8">
-        <button
-          onClick={() => setSelectedGirl(null)}
-          className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-xs uppercase tracking-wider text-muted-foreground transition hover:border-[var(--gold)] hover:text-[var(--gold)]"
-        >
-          ← Back to details
-        </button>
+        {!lockedToUser && (
+          <button
+            onClick={() => setSelectedGirl(null)}
+            className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-xs uppercase tracking-wider text-muted-foreground transition hover:border-[var(--gold)] hover:text-[var(--gold)]"
+          >
+            ← Back to details
+          </button>
+        )}
+
 
         <div className="text-center">
           <h2 className="font-display text-5xl text-[var(--gold)] sm:text-6xl">
@@ -1057,6 +1068,8 @@ function SpendTab({
   user: Name | "";
   onToggle: (name: Name, label: string) => void;
 }) {
+  const isAdmin = user === ADMIN;
+  const visibleNames = user && !isAdmin ? [user as Name] : NAMES;
   const totalRequired = NAMES.reduce(
     (sum, n) => sum + EXPENSES.filter((e) => e.splitAmong.includes(n)).length,
     0,
@@ -1077,10 +1090,12 @@ function SpendTab({
         </h2>
         <p className="mt-1 text-xs uppercase tracking-[0.2em] text-[var(--gold-soft)]">
           {totalPaid} of {totalRequired} paid
+          {isAdmin && <span className="ml-2 normal-case tracking-normal text-[var(--gold)]">· admin: tap any to toggle</span>}
         </p>
         <ul className="mt-5 space-y-5">
-          {NAMES.map((n) => {
+          {visibleNames.map((n) => {
             const isMe = n === user;
+            const canToggle = isMe || isAdmin;
             const expenses = EXPENSES.filter((e) => e.splitAmong.includes(n));
             return (
               <li key={n} className="border-b border-border pb-4 last:border-0">
@@ -1104,13 +1119,13 @@ function SpendTab({
                           </span>
                         </span>
                         <button
-                          onClick={() => isMe && onToggle(n, e.label)}
-                          disabled={!isMe}
+                          onClick={() => canToggle && onToggle(n, e.label)}
+                          disabled={!canToggle}
                           className={`rounded-full border px-3 py-1 text-xs font-medium uppercase tracking-wider transition ${
                             hasPaid
                               ? "border-green-700/40 bg-green-900/20 text-green-400"
                               : "border-border bg-background/30 text-muted-foreground"
-                          } ${isMe ? "cursor-pointer hover:border-[var(--gold)]" : "cursor-default"}`}
+                          } ${canToggle ? "cursor-pointer hover:border-[var(--gold)]" : "cursor-default"}`}
                         >
                           {hasPaid ? "Paid" : "Not paid"}
                         </button>
@@ -1121,6 +1136,7 @@ function SpendTab({
               </li>
             );
           })}
+
         </ul>
       </section>
     </div>
