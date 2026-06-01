@@ -1180,15 +1180,17 @@ function DetailsTab({
         }
       }
     }
-    // Re-derive items from claims directly
-    const allClaimedItems: { label: string; note?: string }[] = [];
+    // Re-derive items from claims directly, grouped by label with count
+    const itemCounts: Record<string, { count: number; note?: string }> = {};
     for (const [itemId, claimList] of Object.entries(claims)) {
       for (const c of claimList) {
         if (c.name === sg) {
-          allClaimedItems.push({ label: itemId, note: c.note });
+          if (!itemCounts[itemId]) itemCounts[itemId] = { count: 0, note: c.note };
+          itemCounts[itemId].count += 1;
         }
       }
     }
+    const allClaimedItems = Object.entries(itemCounts).map(([label, { count, note }]) => ({ label, count, note }));
     const userExpenses = expenses.filter((e) => e.splitAmong.includes(sg));
     const earlyLeavers = ["Phoebe", "Taylor", "Casey"];
     const leavesEarly = earlyLeavers.includes(sg);
@@ -1234,7 +1236,7 @@ function DetailsTab({
                   key={i}
                   className="rounded-full border border-[var(--gold)] bg-[var(--gold)]/10 px-3 py-1.5 text-sm text-[var(--gold-soft)]"
                 >
-                  {it.label}
+                  {it.label} ({it.count})
                   {it.note && <span className="ml-1 opacity-70">· {it.note}</span>}
                 </span>
               ))}
