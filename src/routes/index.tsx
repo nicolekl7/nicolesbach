@@ -163,6 +163,8 @@ export default function BachelorettePage() {
   const [formAmount, setFormAmount] = useState(1);
   const [formNote, setFormNote] = useState("");
   const [paid, setPaid] = useState<PaidMap>(ALL_PAID_FALSE);
+  const [spendPw, setSpendPw] = useState("");
+  const spendUnlocked = spendPw === "nyler";
 
 
   const allItems = useMemo(() => SECTIONS.flatMap((s) => s.items), []);
@@ -349,7 +351,29 @@ export default function BachelorettePage() {
           </>
         )}
         {tab === "who" && <WhoTab claims={claims} user={user} />}
-        {tab === "spend" && (
+        {tab === "spend" && !spendUnlocked && (
+          <div className="mx-auto max-w-sm rounded-lg border border-border bg-card/40 p-6 text-center">
+            <h2 className="font-display text-2xl text-foreground">
+              <em className="text-[var(--gold)]">Password required</em>
+            </h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Enter the password to view the spend tab.
+            </p>
+            <input
+              type="password"
+              value={spendPw}
+              onChange={(e) => setSpendPw(e.target.value)}
+              placeholder="••••••"
+              className="mt-4 w-full rounded-md border border-border bg-background px-4 py-3 text-center text-base text-foreground outline-none transition focus:border-[var(--gold)] focus:ring-1 focus:ring-[var(--gold)]"
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && spendPw === "nyler") {
+                  setSpendPw("nyler");
+                }
+              }}
+            />
+          </div>
+        )}
+        {tab === "spend" && spendUnlocked && (
           <SpendTab
             paid={paid}
             user={user}
