@@ -163,6 +163,7 @@ export default function BachelorettePage() {
   const [formAmount, setFormAmount] = useState(1);
   const [formNote, setFormNote] = useState("");
   const [paid, setPaid] = useState<PaidMap>(ALL_PAID_FALSE);
+  const [expenses, setExpenses] = useState<Expense[]>(INITIAL_EXPENSES);
   const [spendPw, setSpendPw] = useState("");
   const spendUnlocked = spendPw === "nyler";
 
