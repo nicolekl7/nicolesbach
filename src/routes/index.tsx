@@ -640,10 +640,12 @@ function WhoTab({
     return map;
   }, [claims]);
 
+  const visibleNames = user && user !== ADMIN ? [user as Name] : NAMES;
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-      {NAMES.map((name) => {
+      {visibleNames.map((name) => {
         const isMe = name === user;
+
         const items = itemsByPerson[name];
         const totalClaims = items.reduce((sum, it) => sum + it.count, 0);
         return (
