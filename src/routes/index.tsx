@@ -35,6 +35,8 @@ const NAMES = [
   "Taylor",
 ] as const;
 type Name = (typeof NAMES)[number];
+const ADMIN: Name = "Sabrina";
+
 
 type PaidMap = Record<Name, Record<string, boolean>>;
 const ALL_PAID_FALSE = Object.fromEntries(
