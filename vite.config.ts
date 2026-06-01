@@ -7,10 +7,9 @@
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
 export default defineConfig({
-  // This empty array tricks Wrangler's deployment scanner into succeeding
-  vite: {
-    plugins: [], 
-  },
+  // Moved to the absolute root level to satisfy Wrangler's strict scanner
+  plugins: [],
+  
   tanstackStart: {
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
     // nitro/vite builds from this
