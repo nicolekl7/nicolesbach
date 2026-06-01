@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { loadContent, saveContent } from "../lib/api/content.functions";
 
@@ -326,44 +326,31 @@ export default function BachelorettePage() {
     }).catch(() => {});
   }, []);
 
-  // Debounced KV save
-  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const persistContent = useCallback(
-    (patch: Partial<{
-      themes: Theme[];
-      sections: Section[];
-      itinerary: ItinDay[];
-      cars: typeof DEFAULT_CARS;
-      houseInfo: typeof DEFAULT_HOUSE;
-    }>) => {
-      if (!adminMode) return;
-      if (saveTimer.current) clearTimeout(saveTimer.current);
-      saveTimer.current = setTimeout(() => {
-        saveContent({
-          data: {
-            password: "nyler",
-            content: {
-              themes: patch.themes ?? themes,
-              sections: patch.sections ?? sections,
-              itinerary: patch.itinerary ?? itinerary,
-              cars: patch.cars ?? cars,
-              houseInfo: patch.houseInfo ?? houseInfo,
-            },
-          },
-        }).catch((err) => {
-          console.error("Save failed:", err);
-          toast.error("Couldn't save — check console for details");
-        });
-      }, 800);
-    },
-    [adminMode, themes, sections, itinerary, cars, houseInfo],
-  );
+  const [saving, setSaving] = useState(false);
 
-  const setThemesA = useCallback((v: Theme[]) => { setThemes(v); persistContent({ themes: v }); }, [persistContent]);
-  const setSectionsA = useCallback((v: Section[]) => { setSections(v); persistContent({ sections: v }); }, [persistContent]);
-  const setItineraryA = useCallback((v: ItinDay[]) => { setItinerary(v); persistContent({ itinerary: v }); }, [persistContent]);
-  const setCarsA = useCallback((v: typeof DEFAULT_CARS) => { setCars(v); persistContent({ cars: v }); }, [persistContent]);
-  const setHouseInfoA = useCallback((v: typeof DEFAULT_HOUSE) => { setHouseInfo(v); persistContent({ houseInfo: v }); }, [persistContent]);
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await saveContent({
+        data: {
+          password: "nyler",
+          content: { themes, sections, itinerary, cars, houseInfo },
+        },
+      });
+      toast.success("Saved!");
+    } catch (err) {
+      console.error("Save failed:", err);
+      toast.error("Save failed — " + (err instanceof Error ? err.message : String(err)));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const setThemesA = (v: Theme[]) => setThemes(v);
+  const setSectionsA = (v: Section[]) => setSections(v);
+  const setItineraryA = (v: ItinDay[]) => setItinerary(v);
+  const setCarsA = (v: typeof DEFAULT_CARS) => setCars(v);
+  const setHouseInfoA = (v: typeof DEFAULT_HOUSE) => setHouseInfo(v);
 
   const allItems = useMemo(() => sections.flatMap((s) => s.items), [sections]);
   const finiteItems = useMemo(
@@ -457,8 +444,15 @@ export default function BachelorettePage() {
             Admin mode · editing enabled
           </span>
           <button
+            onClick={handleSave}
+            disabled={saving}
+            className="ml-4 rounded-md bg-[var(--gold)] px-3 py-1 text-xs font-medium uppercase tracking-wider text-[var(--olive-deep)] transition hover:brightness-110 disabled:opacity-50"
+          >
+            {saving ? "Saving…" : "Save"}
+          </button>
+          <button
             onClick={() => setAdminMode(false)}
-            className="ml-4 text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+            className="ml-3 text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
           >
             Exit
           </button>
