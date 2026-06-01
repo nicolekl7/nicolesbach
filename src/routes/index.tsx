@@ -711,8 +711,11 @@ const CARS: { name: string; people: string; leave: string; arrive: string }[] = 
   { name: "Car #4", people: "Charlene", leave: "1:00 PM", arrive: "4:00 PM" },
 ];
 
-function DetailsTab({ claims, paid }: { claims: Record<string, Claim[]>; paid: PaidMap }) {
+function DetailsTab({ claims, paid, user }: { claims: Record<string, Claim[]>; paid: PaidMap; user: Name | "" }) {
   const [selectedGirl, setSelectedGirl] = useState<Name | null>(null);
+  const lockedToUser = user !== "" && user !== ADMIN;
+  const activeGirl = lockedToUser ? (user as Name) : selectedGirl;
+
 
   if (selectedGirl) {
     const car = CARS.find((c) => c.people.includes(selectedGirl));
