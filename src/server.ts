@@ -39,10 +39,11 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
 
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
-    // 🚀 THE FIX: Cache Cloudflare's env globally the second it hits the server
-    // so our server functions can grab it directly!
-    (globalThis as any)._cloudflareEnv = env;
-
+    // Expose CF KV binding so createServerFn handlers can reach it via globalThis
+    const cfEnv = env as Record<string, unknown> | null | undefined;
+    if (cfEnv?.BACH_KV) {
+      (globalThis as Record<string, unknown>).__BACH_KV__ = cfEnv.BACH_KV;
+    }
     try {
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
