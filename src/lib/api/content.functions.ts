@@ -1,6 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-// @ts-ignore
-import { getEvent } from "vinxi/http";
+import { getRequest } from "@tanstack/react-start/server";
 import { z } from "zod";
 
 const ADMIN_PASSWORD = "nyler";
@@ -9,25 +8,24 @@ const KV_KEY = "bach_content_v1";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function getKV(): any | null {
   try {
-    const event = getEvent();
-    const ctx = (event as any)?.context;
-
-    // The Ultimate Catch-All: Check every place Cloudflare or Nitro could hide the database
-    const db = ctx?.cloudflare?.env?.BACH_KV 
-      || ctx?.env?.BACH_KV 
-      || (globalThis as any)?.BACH_KV 
-      || (globalThis as any)?.__env__?.BACH_KV 
-      || (globalThis as any)?.process?.env?.BACH_KV;
-
-    if (!db) {
-      console.error("🚨 DATABASE NOT FOUND IN CONTEXT!");
-      console.error("- Context keys available:", ctx ? Object.keys(ctx) : "none");
-      if (ctx?.cloudflare?.env) {
-         console.error("- Cloudflare Env keys available:", Object.keys(ctx.cloudflare.env));
-      }
+    // 1. The official Nitro v3 standard for Cloudflare bindings (with nodejs_compat)
+    if (typeof process !== "undefined" && process.env?.BACH_KV) {
+      return process.env.BACH_KV;
     }
 
-    return db || null;
+    // 2. Fallbacks for globalThis injection
+    const globalEnv = (globalThis as any).process?.env;
+    if (globalEnv?.BACH_KV) return globalEnv.BACH_KV;
+    
+    if ((globalThis as any).__env__?.BACH_KV) {
+      return (globalThis as any).__env__.BACH_KV;
+    }
+
+    // 3. Fallback to hidden Request properties just in case
+    const request = getRequest() as any;
+    return request?.runtime?.cloudflare?.env?.BACH_KV 
+        ?? request?.context?.cloudflare?.env?.BACH_KV 
+        ?? null;
   } catch (err) {
     console.error("Error accessing KV binding:", err);
     return null;
@@ -63,6 +61,7 @@ export const saveContent = createServerFn({ method: "POST" })
     
     const kv = getKV();
     if (!kv) {
+      console.error("CRITICAL: KV Storage not configured during saveContent!");
       throw new Error("Storage not configured");
     }
     
