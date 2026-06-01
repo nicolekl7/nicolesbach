@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+import { loadContent, saveContent } from "../lib/api/content.functions";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -268,20 +269,6 @@ const INITIAL_EXPENSES: Expense[] = [
   },
 ];
 
-function useLocalState<T>(key: string, defaultValue: T) {
-  const [value, setValue] = useState<T>(() => {
-    try {
-      const saved = localStorage.getItem(key);
-      return saved ? (JSON.parse(saved) as T) : defaultValue;
-    } catch {
-      return defaultValue;
-    }
-  });
-  useEffect(() => {
-    try { localStorage.setItem(key, JSON.stringify(value)); } catch {}
-  }, [key, value]);
-  return [value, setValue] as const;
-}
 
 function MartiniGlass({ className = "" }: { className?: string }) {
   return (
@@ -320,12 +307,60 @@ export default function BachelorettePage() {
   const [adminPw, setAdminPw] = useState("");
   const [adminPwError, setAdminPwError] = useState(false);
 
-  // Editable content state — persisted to localStorage
-  const [themes, setThemes] = useLocalState<Theme[]>("bach-themes", DEFAULT_THEMES);
-  const [sections, setSections] = useLocalState<Section[]>("bach-sections", DEFAULT_SECTIONS);
-  const [itinerary, setItinerary] = useLocalState<ItinDay[]>("bach-itinerary", DEFAULT_ITINERARY);
-  const [cars, setCars] = useLocalState<typeof DEFAULT_CARS>("bach-cars", DEFAULT_CARS);
-  const [houseInfo, setHouseInfo] = useLocalState<typeof DEFAULT_HOUSE>("bach-house", DEFAULT_HOUSE);
+  // Editable content state — synced to Cloudflare KV (shared across all browsers)
+  const [themes, setThemes] = useState<Theme[]>(DEFAULT_THEMES);
+  const [sections, setSections] = useState<Section[]>(DEFAULT_SECTIONS);
+  const [itinerary, setItinerary] = useState<ItinDay[]>(DEFAULT_ITINERARY);
+  const [cars, setCars] = useState(DEFAULT_CARS);
+  const [houseInfo, setHouseInfo] = useState(DEFAULT_HOUSE);
+
+  // Load shared content from KV on mount
+  useEffect(() => {
+    loadContent().then((data) => {
+      if (!data) return;
+      if (data.themes) setThemes(data.themes as Theme[]);
+      if (data.sections) setSections(data.sections as Section[]);
+      if (data.itinerary) setItinerary(data.itinerary as ItinDay[]);
+      if (data.cars) setCars(data.cars as typeof DEFAULT_CARS);
+      if (data.houseInfo) setHouseInfo(data.houseInfo as typeof DEFAULT_HOUSE);
+    }).catch(() => {});
+  }, []);
+
+  // Debounced KV save
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const persistContent = useCallback(
+    (patch: Partial<{
+      themes: Theme[];
+      sections: Section[];
+      itinerary: ItinDay[];
+      cars: typeof DEFAULT_CARS;
+      houseInfo: typeof DEFAULT_HOUSE;
+    }>) => {
+      if (!adminMode) return;
+      if (saveTimer.current) clearTimeout(saveTimer.current);
+      saveTimer.current = setTimeout(() => {
+        saveContent({
+          data: {
+            password: "nyler",
+            content: {
+              themes: patch.themes ?? themes,
+              sections: patch.sections ?? sections,
+              itinerary: patch.itinerary ?? itinerary,
+              cars: patch.cars ?? cars,
+              houseInfo: patch.houseInfo ?? houseInfo,
+            },
+          },
+        }).catch(() => {});
+      }, 800);
+    },
+    [adminMode, themes, sections, itinerary, cars, houseInfo],
+  );
+
+  const setThemesA = useCallback((v: Theme[]) => { setThemes(v); persistContent({ themes: v }); }, [persistContent]);
+  const setSectionsA = useCallback((v: Section[]) => { setSections(v); persistContent({ sections: v }); }, [persistContent]);
+  const setItineraryA = useCallback((v: ItinDay[]) => { setItinerary(v); persistContent({ itinerary: v }); }, [persistContent]);
+  const setCarsA = useCallback((v: typeof DEFAULT_CARS) => { setCars(v); persistContent({ cars: v }); }, [persistContent]);
+  const setHouseInfoA = useCallback((v: typeof DEFAULT_HOUSE) => { setHouseInfo(v); persistContent({ houseInfo: v }); }, [persistContent]);
 
   const allItems = useMemo(() => sections.flatMap((s) => s.items), [sections]);
   const finiteItems = useMemo(
@@ -537,17 +572,17 @@ export default function BachelorettePage() {
             user={user}
             expenses={expenses}
             cars={cars}
-            setCars={adminMode ? setCars : undefined}
+            setCars={adminMode ? setCarsA : undefined}
             houseInfo={houseInfo}
-            setHouseInfo={adminMode ? setHouseInfo : undefined}
+            setHouseInfo={adminMode ? setHouseInfoA : undefined}
             itinerary={itinerary}
-            setItinerary={adminMode ? setItinerary : undefined}
+            setItinerary={adminMode ? setItineraryA : undefined}
           />
         )}
         {tab === "itinerary" && (
           <ItineraryTab
             itinerary={itinerary}
-            setItinerary={adminMode ? setItinerary : undefined}
+            setItinerary={adminMode ? setItineraryA : undefined}
           />
         )}
         {tab === "signup" && (
@@ -580,7 +615,7 @@ export default function BachelorettePage() {
                         const next = sections.map((s, i) =>
                           i === sIdx ? { ...s, title: e.target.value } : s
                         );
-                        setSections(next);
+                        setSectionsA(next);
                       }}
                       className="font-display w-full bg-transparent text-3xl text-[var(--gold)] outline-none border-b border-[var(--gold)]/30 focus:border-[var(--gold)] sm:text-4xl"
                     />
@@ -598,7 +633,7 @@ export default function BachelorettePage() {
                             ? { ...s, items: [...s.items, { id, label: "New item", qty: 1 as number }] }
                             : s
                         );
-                        setSections(next);
+                        setSectionsA(next);
                       }}
                       className="shrink-0 rounded-md border border-[var(--gold)]/40 px-2 py-1 text-[10px] uppercase tracking-wider text-[var(--gold)] hover:bg-[var(--gold)]/10"
                     >
@@ -629,7 +664,7 @@ export default function BachelorettePage() {
                             ? { ...s, items: s.items.map((it, ii) => (ii === iIdx ? updated : it)) }
                             : s
                         );
-                        setSections(next);
+                        setSectionsA(next);
                       }}
                       onDeleteItem={() => {
                         const next = sections.map((s, si) =>
@@ -637,7 +672,7 @@ export default function BachelorettePage() {
                             ? { ...s, items: s.items.filter((_, ii) => ii !== iIdx) }
                             : s
                         );
-                        setSections(next);
+                        setSectionsA(next);
                       }}
                     />
                   ))}
@@ -649,7 +684,7 @@ export default function BachelorettePage() {
               <button
                 onClick={() => {
                   const id = `section-${Date.now()}`;
-                  setSections([...sections, { id, title: "New section", items: [] }]);
+                  setSectionsA([...sections, { id, title: "New section", items: [] }]);
                 }}
                 className="w-full rounded-lg border border-dashed border-[var(--gold)]/40 px-4 py-3 text-xs uppercase tracking-wider text-[var(--gold)] hover:bg-[var(--gold)]/5"
               >
@@ -662,7 +697,7 @@ export default function BachelorettePage() {
         {tab === "vibes" && (
           <VibesTab
             themes={themes}
-            setThemes={adminMode ? setThemes : undefined}
+            setThemes={adminMode ? setThemesA : undefined}
           />
         )}
         {tab === "payments" && adminMode && (
