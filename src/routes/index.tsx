@@ -37,7 +37,6 @@ const NAMES = [
 type Name = (typeof NAMES)[number];
 const ADMIN: Name = "Sabrina";
 
-
 type PaidMap = Record<Name, Record<string, boolean>>;
 const ALL_PAID_FALSE = Object.fromEntries(
   NAMES.map((n) => [n, {} as Record<string, boolean>])
@@ -54,7 +53,7 @@ type Item = {
 
 type Section = { id: string; title: string; items: Item[] };
 
-const SECTIONS: Section[] = [
+const DEFAULT_SECTIONS: Section[] = [
   {
     id: "bar",
     title: "Bar cart",
@@ -132,6 +131,99 @@ const INITIAL_CLAIMS: Record<string, Claim[]> = {
   "house-steamer": [{ name: "Sabrina" }],
 };
 
+type ItinDay = {
+  date: string;
+  label: string;
+  blocks: { time: string; what: string }[];
+};
+
+const DEFAULT_ITINERARY: ItinDay[] = [
+  {
+    date: "Thu, Jul 30",
+    label: "Thursday",
+    blocks: [
+      { time: "4:00 PM", what: "Official check in" },
+      { time: "5:00 PM", what: "Decorating" },
+      { time: "7:00 PM", what: "Sunset theme · dinner out" },
+    ],
+  },
+  {
+    date: "Fri, Jul 31",
+    label: "Friday",
+    blocks: [
+      { time: "8:00 AM", what: "Pickleball (optional)" },
+      { time: "9:00 AM", what: "Beach day" },
+      { time: "7:00 PM", what: "Glitter theme" },
+      { time: "8:00 PM", what: "Pregame games" },
+      { time: "9:00 PM", what: "Out on the town" },
+    ],
+  },
+  {
+    date: "Sat, Aug 1",
+    label: "Saturday",
+    blocks: [
+      { time: "10:00 AM", what: "Brunch + shops in Rehoboth" },
+      { time: "1:00 PM", what: "Back to bnb · Tini Bikinis boat theme" },
+      { time: "2:30 PM", what: "Walk to boat" },
+      { time: "3:00 PM", what: "Boat" },
+      { time: "6:00 PM", what: "Bonfire" },
+      { time: "9:00 PM", what: "Games & pjs" },
+    ],
+  },
+  {
+    date: "Sun, Aug 2",
+    label: "Sunday",
+    blocks: [
+      { time: "10:00 AM", what: "Checkout · bye-bye brunch" },
+      { time: "12:00 PM", what: "Phoebe / Taylor / Casey need to go" },
+    ],
+  },
+];
+
+const DEFAULT_CARS: { name: string; people: string; leave: string; arrive: string }[] = [
+  { name: "Car #1", people: "Sabrina, Phoebe, Jane", leave: "9:00 AM", arrive: "2:30 PM" },
+  { name: "Car #2", people: "Lara, Jess, Nicole, p/u Casey", leave: "9:30 AM", arrive: "4:00 PM" },
+  { name: "Car #3", people: "Isabel, Kait, Taylor", leave: "10:00 AM", arrive: "4:00 PM" },
+  { name: "Car #4", people: "Charlene", leave: "1:00 PM", arrive: "4:00 PM" },
+];
+
+const DEFAULT_HOUSE = {
+  addr: "21 Bellevue St Unit #5, Dewey Beach, DE 19971",
+  checkIn: "Thursday, July 30 · 4:00 PM",
+  checkOut: "Sunday, August 2 · 10:00 AM",
+};
+
+type Expense = {
+  label: string;
+  total: number;
+  payer: string;
+  perPerson: number;
+  splitAmong: Name[];
+  note?: string;
+};
+
+const INITIAL_EXPENSES: Expense[] = [
+  {
+    label: "House",
+    total: 3800,
+    payer: "Sabrina",
+    perPerson: 380,
+    splitAmong: [
+      "Nicole", "Sabrina", "Lara", "Jess", "Isabel",
+      "Kait", "Phoebe", "Jane", "Char", "Casey",
+    ],
+    note: "Split 10 ways (Taylor not included).",
+  },
+  {
+    label: "Boat — Octolounge Kraken",
+    total: 800,
+    payer: "Sabrina",
+    perPerson: 80,
+    splitAmong: [...NAMES],
+    note: "$100 deposit paid 4/7. Split 10 ways.",
+  },
+];
+
 function MartiniGlass({ className = "" }: { className?: string }) {
   return (
     <svg
@@ -156,19 +248,26 @@ function MartiniGlass({ className = "" }: { className?: string }) {
 export default function BachelorettePage() {
   const [user, setUser] = useState<Name | "">("");
   const [claims, setClaims] = useState<Record<string, Claim[]>>(INITIAL_CLAIMS);
-  const [tab, setTab] = useState<
-    "details" | "itinerary" | "signup" | "who" | "spend"
-  >("details");
+  const [tab, setTab] = useState<"details" | "itinerary" | "signup" | "who" | "payments">("details");
   const [formFor, setFormFor] = useState<string | null>(null);
   const [formAmount, setFormAmount] = useState(1);
   const [formNote, setFormNote] = useState("");
   const [paid, setPaid] = useState<PaidMap>(ALL_PAID_FALSE);
   const [expenses, setExpenses] = useState<Expense[]>(INITIAL_EXPENSES);
-  const [spendPw, setSpendPw] = useState("");
-  const spendUnlocked = spendPw === "nyler";
 
+  // Admin state
+  const [adminMode, setAdminMode] = useState(false);
+  const [showAdminModal, setShowAdminModal] = useState(false);
+  const [adminPw, setAdminPw] = useState("");
+  const [adminPwError, setAdminPwError] = useState(false);
 
-  const allItems = useMemo(() => SECTIONS.flatMap((s) => s.items), []);
+  // Editable content state
+  const [sections, setSections] = useState<Section[]>(DEFAULT_SECTIONS);
+  const [itinerary, setItinerary] = useState<ItinDay[]>(DEFAULT_ITINERARY);
+  const [cars, setCars] = useState(DEFAULT_CARS);
+  const [houseInfo, setHouseInfo] = useState(DEFAULT_HOUSE);
+
+  const allItems = useMemo(() => sections.flatMap((s) => s.items), [sections]);
   const finiteItems = useMemo(
     () => allItems.filter((i) => typeof i.qty === "number"),
     [allItems],
@@ -239,8 +338,78 @@ export default function BachelorettePage() {
     toast(`Removed one ${item.label.toLowerCase()}`);
   };
 
+  const handleAdminSubmit = () => {
+    if (adminPw === "nyler") {
+      setAdminMode(true);
+      setShowAdminModal(false);
+      setAdminPw("");
+      setAdminPwError(false);
+      toast.success("Admin mode on");
+    } else {
+      setAdminPwError(true);
+    }
+  };
+
   return (
     <div className="noise-overlay relative min-h-screen text-foreground">
+      {/* Admin mode banner */}
+      {adminMode && (
+        <div className="relative z-20 border-b border-[var(--gold)]/30 bg-[var(--gold)]/10 px-5 py-2 text-center">
+          <span className="text-xs uppercase tracking-[0.2em] text-[var(--gold)]">
+            Admin mode · editing enabled
+          </span>
+          <button
+            onClick={() => setAdminMode(false)}
+            className="ml-4 text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+          >
+            Exit
+          </button>
+        </div>
+      )}
+
+      {/* Admin password modal */}
+      {showAdminModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
+          <div className="w-full max-w-sm rounded-lg border border-border bg-card p-6 shadow-xl">
+            <h2 className="font-display text-2xl text-foreground">
+              <em className="text-[var(--gold)]">Admin</em>
+            </h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Enter the password to unlock editing.
+            </p>
+            <input
+              autoFocus
+              type="password"
+              value={adminPw}
+              onChange={(e) => { setAdminPw(e.target.value); setAdminPwError(false); }}
+              placeholder="••••••"
+              className={`mt-4 w-full rounded-md border bg-background px-4 py-3 text-center text-base text-foreground outline-none transition focus:ring-1 focus:ring-[var(--gold)] ${adminPwError ? "border-red-500 focus:border-red-500" : "border-border focus:border-[var(--gold)]"}`}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleAdminSubmit();
+                if (e.key === "Escape") { setShowAdminModal(false); setAdminPw(""); setAdminPwError(false); }
+              }}
+            />
+            {adminPwError && (
+              <p className="mt-2 text-xs text-red-400">Incorrect password.</p>
+            )}
+            <div className="mt-4 flex gap-2">
+              <button
+                onClick={handleAdminSubmit}
+                className="flex-1 rounded-md bg-[var(--gold)] px-4 py-2.5 text-xs font-medium uppercase tracking-wider text-[var(--olive-deep)]"
+              >
+                Unlock
+              </button>
+              <button
+                onClick={() => { setShowAdminModal(false); setAdminPw(""); setAdminPwError(false); }}
+                className="rounded-md border border-border px-4 py-2.5 text-xs uppercase tracking-wider text-muted-foreground"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Hero */}
       <header className="relative z-10 px-5 pt-12 pb-10 sm:pt-20 sm:pb-16">
         <div className="mx-auto max-w-3xl text-center">
@@ -253,10 +422,6 @@ export default function BachelorettePage() {
           <h1 className="font-display mt-5 text-5xl leading-tight text-foreground sm:text-7xl">
             Nicole's <em className="text-[var(--gold)]">Bachelorette</em>
           </h1>
-          <p className="mt-5 text-base text-muted-foreground sm:text-lg">
-            Sign up below · claim as many as you'd like · we've got this
-          </p>
-
           {/* Name selector */}
           <div className="mx-auto mt-10 max-w-sm">
             <label className="mb-2 block text-xs uppercase tracking-[0.25em] text-muted-foreground">
@@ -293,15 +458,35 @@ export default function BachelorettePage() {
           <TabBtn active={tab === "who"} onClick={() => setTab("who")}>
             Who's bringing
           </TabBtn>
-          <TabBtn active={tab === "spend"} onClick={() => setTab("spend")}>
-            Spend
-          </TabBtn>
+          {adminMode && (
+            <TabBtn active={tab === "payments"} onClick={() => setTab("payments")}>
+              Payments
+            </TabBtn>
+          )}
         </div>
       </div>
 
       <main className="relative z-10 mx-auto max-w-3xl px-5 py-8 pb-24">
-        {tab === "details" && <DetailsTab claims={claims} paid={paid} user={user} expenses={expenses} />}
-        {tab === "itinerary" && <ItineraryTab />}
+        {tab === "details" && (
+          <DetailsTab
+            claims={claims}
+            paid={paid}
+            user={user}
+            expenses={expenses}
+            cars={cars}
+            setCars={adminMode ? setCars : undefined}
+            houseInfo={houseInfo}
+            setHouseInfo={adminMode ? setHouseInfo : undefined}
+            itinerary={itinerary}
+            setItinerary={adminMode ? setItinerary : undefined}
+          />
+        )}
+        {tab === "itinerary" && (
+          <ItineraryTab
+            itinerary={itinerary}
+            setItinerary={adminMode ? setItinerary : undefined}
+          />
+        )}
         {tab === "signup" && (
           <>
             {/* Progress */}
@@ -322,13 +507,44 @@ export default function BachelorettePage() {
               </div>
             </div>
 
-            {SECTIONS.map((section) => (
+            {sections.map((section, sIdx) => (
               <section key={section.id} className="mb-12">
-                <h2 className="font-display mb-5 text-3xl text-foreground sm:text-4xl">
-                  <em className="text-[var(--gold)]">{section.title}</em>
-                </h2>
+                <div className="mb-5 flex items-center gap-3">
+                  {adminMode ? (
+                    <input
+                      value={section.title}
+                      onChange={(e) => {
+                        const next = sections.map((s, i) =>
+                          i === sIdx ? { ...s, title: e.target.value } : s
+                        );
+                        setSections(next);
+                      }}
+                      className="font-display w-full bg-transparent text-3xl text-[var(--gold)] outline-none border-b border-[var(--gold)]/30 focus:border-[var(--gold)] sm:text-4xl"
+                    />
+                  ) : (
+                    <h2 className="font-display text-3xl text-foreground sm:text-4xl">
+                      <em className="text-[var(--gold)]">{section.title}</em>
+                    </h2>
+                  )}
+                  {adminMode && (
+                    <button
+                      onClick={() => {
+                        const id = `${section.id}-item-${Date.now()}`;
+                        const next = sections.map((s, i) =>
+                          i === sIdx
+                            ? { ...s, items: [...s.items, { id, label: "New item", qty: 1 as number }] }
+                            : s
+                        );
+                        setSections(next);
+                      }}
+                      className="shrink-0 rounded-md border border-[var(--gold)]/40 px-2 py-1 text-[10px] uppercase tracking-wider text-[var(--gold)] hover:bg-[var(--gold)]/10"
+                    >
+                      + Item
+                    </button>
+                  )}
+                </div>
                 <ul className="divide-y divide-border rounded-lg border border-border bg-card/40">
-                  {section.items.map((item) => (
+                  {section.items.map((item, iIdx) => (
                     <ItemRow
                       key={item.id}
                       item={item}
@@ -343,38 +559,44 @@ export default function BachelorettePage() {
                       setFormNote={setFormNote}
                       onSubmitForm={() => submitForm(item)}
                       onCloseForm={() => setFormFor(null)}
+                      adminMode={adminMode}
+                      onEditItem={(updated) => {
+                        const next = sections.map((s, si) =>
+                          si === sIdx
+                            ? { ...s, items: s.items.map((it, ii) => (ii === iIdx ? updated : it)) }
+                            : s
+                        );
+                        setSections(next);
+                      }}
+                      onDeleteItem={() => {
+                        const next = sections.map((s, si) =>
+                          si === sIdx
+                            ? { ...s, items: s.items.filter((_, ii) => ii !== iIdx) }
+                            : s
+                        );
+                        setSections(next);
+                      }}
                     />
-
                   ))}
                 </ul>
               </section>
             ))}
+
+            {adminMode && (
+              <button
+                onClick={() => {
+                  const id = `section-${Date.now()}`;
+                  setSections([...sections, { id, title: "New section", items: [] }]);
+                }}
+                className="w-full rounded-lg border border-dashed border-[var(--gold)]/40 px-4 py-3 text-xs uppercase tracking-wider text-[var(--gold)] hover:bg-[var(--gold)]/5"
+              >
+                + Add section
+              </button>
+            )}
           </>
         )}
-        {tab === "who" && <WhoTab claims={claims} user={user} />}
-        {tab === "spend" && !spendUnlocked && (
-          <div className="mx-auto max-w-sm rounded-lg border border-border bg-card/40 p-6 text-center">
-            <h2 className="font-display text-2xl text-foreground">
-              <em className="text-[var(--gold)]">Password required</em>
-            </h2>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Enter the password to view the spend tab.
-            </p>
-            <input
-              type="password"
-              value={spendPw}
-              onChange={(e) => setSpendPw(e.target.value)}
-              placeholder="••••••"
-              className="mt-4 w-full rounded-md border border-border bg-background px-4 py-3 text-center text-base text-foreground outline-none transition focus:border-[var(--gold)] focus:ring-1 focus:ring-[var(--gold)]"
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && spendPw === "nyler") {
-                  setSpendPw("nyler");
-                }
-              }}
-            />
-          </div>
-        )}
-        {tab === "spend" && spendUnlocked && (
+        {tab === "who" && <WhoTab claims={claims} user={user} sections={sections} />}
+        {tab === "payments" && adminMode && (
           <SpendTab
             paid={paid}
             user={user}
@@ -388,12 +610,23 @@ export default function BachelorettePage() {
             }
           />
         )}
-
       </main>
 
-
       <footer className="relative z-10 border-t border-border px-5 py-8 text-center text-xs text-muted-foreground">
-        Made with love · cheers to Nicole 🥂
+        <p>Made with love · cheers to Nicole 🥂</p>
+        <button
+          onClick={() => {
+            if (adminMode) {
+              setAdminMode(false);
+              toast("Admin mode off");
+            } else {
+              setShowAdminModal(true);
+            }
+          }}
+          className="mt-3 inline-block rounded-md border border-border/50 px-3 py-1.5 text-[10px] uppercase tracking-[0.2em] text-muted-foreground/40 transition hover:border-border hover:text-muted-foreground"
+        >
+          {adminMode ? "Exit admin" : "Admin"}
+        </button>
       </footer>
     </div>
   );
@@ -416,7 +649,6 @@ function TabBtn({
           ? "bg-[var(--gold)] text-[var(--olive-deep)] shadow-sm"
           : "text-muted-foreground hover:text-foreground"
       }`}
-
     >
       {children}
     </button>
@@ -436,6 +668,9 @@ function ItemRow({
   setFormNote,
   onSubmitForm,
   onCloseForm,
+  adminMode,
+  onEditItem,
+  onDeleteItem,
 }: {
   item: Item;
   claims: Claim[];
@@ -449,6 +684,9 @@ function ItemRow({
   setFormNote: (v: string) => void;
   onSubmitForm: () => void;
   onCloseForm: () => void;
+  adminMode?: boolean;
+  onEditItem?: (updated: Item) => void;
+  onDeleteItem?: () => void;
 }) {
   const isByo = item.qty === "byo";
   const isUnlimited = item.qty === "unlimited";
@@ -461,7 +699,6 @@ function ItemRow({
   const canAddMore = !isByo && !fullyCovered;
   const others = claims.filter((c) => c.name !== user);
 
-  // Group others by name with count
   const othersGrouped = others.reduce<{ name: Name; count: number; notes: string[] }[]>(
     (acc, c) => {
       const existing = acc.find((g) => g.name === c.name);
@@ -476,6 +713,48 @@ function ItemRow({
     [],
   );
   const userNotes = claims.filter((c) => c.name === user && c.note).map((c) => c.note!);
+
+  if (adminMode && onEditItem) {
+    return (
+      <li className="px-4 py-3 sm:px-5">
+        <div className="flex items-center gap-2">
+          <input
+            value={item.label}
+            onChange={(e) => onEditItem({ ...item, label: e.target.value })}
+            className="min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none border-b border-border/50 focus:border-[var(--gold)] py-0.5"
+          />
+          <select
+            value={item.qty}
+            onChange={(e) => {
+              const v = e.target.value;
+              const qty = v === "unlimited" || v === "byo" ? v : parseInt(v) || 1;
+              onEditItem({ ...item, qty });
+            }}
+            className="rounded border border-border/50 bg-background/30 px-2 py-1 text-xs text-muted-foreground outline-none focus:border-[var(--gold)]"
+          >
+            <option value="unlimited">unlimited</option>
+            <option value="byo">byo</option>
+            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((n) => (
+              <option key={n} value={n}>{n}</option>
+            ))}
+          </select>
+          <input
+            value={item.hint ?? ""}
+            onChange={(e) => onEditItem({ ...item, hint: e.target.value || undefined })}
+            placeholder="hint"
+            className="w-24 bg-transparent text-xs text-muted-foreground outline-none border-b border-border/30 focus:border-[var(--gold)] py-0.5"
+          />
+          <button
+            onClick={onDeleteItem}
+            className="shrink-0 text-xs text-muted-foreground/50 hover:text-red-400"
+            aria-label="Delete item"
+          >
+            ✕
+          </button>
+        </div>
+      </li>
+    );
+  }
 
   return (
     <li
@@ -639,18 +918,19 @@ function ItemRow({
   );
 }
 
-
 function WhoTab({
   claims,
   user,
+  sections,
 }: {
   claims: Record<string, Claim[]>;
   user: Name | "";
+  sections: Section[];
 }) {
   const itemsByPerson = useMemo(() => {
     const map = {} as Record<Name, { label: string; count: number }[]>;
     for (const n of NAMES) map[n] = [];
-    for (const section of SECTIONS) {
+    for (const section of sections) {
       for (const item of section.items) {
         const list = claims[item.id] ?? [];
         const counts: Record<string, number> = {};
@@ -665,14 +945,13 @@ function WhoTab({
       }
     }
     return map;
-  }, [claims]);
+  }, [claims, sections]);
 
   const visibleNames = user && user !== ADMIN ? [user as Name] : NAMES;
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
       {visibleNames.map((name) => {
         const isMe = name === user;
-
         const items = itemsByPerson[name];
         const totalClaims = items.reduce((sum, it) => sum + it.count, 0);
         return (
@@ -733,36 +1012,88 @@ function WhoTab({
 
 // ---------- Details ----------
 
-const CARS: { name: string; people: string; leave: string; arrive: string }[] = [
-  { name: "Car #1", people: "Sabrina, Phoebe, Jane", leave: "9:00 AM", arrive: "2:30 PM" },
-  { name: "Car #2", people: "Lara, Jess, Nicole, p/u Casey", leave: "9:30 AM", arrive: "4:00 PM" },
-  { name: "Car #3", people: "Isabel, Kait, Taylor", leave: "10:00 AM", arrive: "4:00 PM" },
-  { name: "Car #4", people: "Charlene", leave: "1:00 PM", arrive: "4:00 PM" },
-];
+function EditableField({
+  value,
+  onChange,
+  className,
+  multiline,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  className?: string;
+  multiline?: boolean;
+}) {
+  if (multiline) {
+    return (
+      <textarea
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        rows={2}
+        className={`w-full resize-none bg-transparent outline-none border-b border-[var(--gold)]/30 focus:border-[var(--gold)] ${className ?? ""}`}
+      />
+    );
+  }
+  return (
+    <input
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className={`w-full bg-transparent outline-none border-b border-[var(--gold)]/30 focus:border-[var(--gold)] ${className ?? ""}`}
+    />
+  );
+}
 
-function DetailsTab({ claims, paid, user, expenses }: { claims: Record<string, Claim[]>; paid: PaidMap; user: Name | ""; expenses: Expense[] }) {
+function DetailsTab({
+  claims,
+  paid,
+  user,
+  expenses,
+  cars,
+  setCars,
+  houseInfo,
+  setHouseInfo,
+  itinerary,
+  setItinerary,
+}: {
+  claims: Record<string, Claim[]>;
+  paid: PaidMap;
+  user: Name | "";
+  expenses: Expense[];
+  cars: typeof DEFAULT_CARS;
+  setCars?: (c: typeof DEFAULT_CARS) => void;
+  houseInfo: typeof DEFAULT_HOUSE;
+  setHouseInfo?: (h: typeof DEFAULT_HOUSE) => void;
+  itinerary: ItinDay[];
+  setItinerary?: (it: ItinDay[]) => void;
+}) {
   const [selectedGirl, setSelectedGirl] = useState<Name | null>(null);
   const lockedToUser = user !== "" && user !== ADMIN;
   const activeGirl = lockedToUser ? (user as Name) : selectedGirl;
-
+  const adminMode = !!setCars;
 
   if (activeGirl) {
-    const selectedGirl = activeGirl;
-    const car = CARS.find((c) => c.people.includes(selectedGirl));
+    const sg = activeGirl;
+    const car = cars.find((c) => c.people.includes(sg));
     const items: { label: string; note?: string }[] = [];
-    for (const section of SECTIONS) {
+    for (const section of ([] as Section[])) {
       for (const item of section.items) {
         const list = claims[item.id] ?? [];
         for (const c of list) {
-          if (c.name === selectedGirl) {
-            items.push({ label: item.label, note: c.note });
-          }
+          if (c.name === sg) items.push({ label: item.label, note: c.note });
         }
       }
     }
-    const userExpenses = expenses.filter((e) => e.splitAmong.includes(selectedGirl));
+    // Re-derive items from claims directly
+    const allClaimedItems: { label: string; note?: string }[] = [];
+    for (const [itemId, claimList] of Object.entries(claims)) {
+      for (const c of claimList) {
+        if (c.name === sg) {
+          allClaimedItems.push({ label: itemId, note: c.note });
+        }
+      }
+    }
+    const userExpenses = expenses.filter((e) => e.splitAmong.includes(sg));
     const earlyLeavers = ["Phoebe", "Taylor", "Casey"];
-    const leavesEarly = earlyLeavers.includes(selectedGirl);
+    const leavesEarly = earlyLeavers.includes(sg);
 
     return (
       <div className="space-y-8">
@@ -775,11 +1106,8 @@ function DetailsTab({ claims, paid, user, expenses }: { claims: Record<string, C
           </button>
         )}
 
-
         <div className="text-center">
-          <h2 className="font-display text-5xl text-[var(--gold)] sm:text-6xl">
-            {selectedGirl}
-          </h2>
+          <h2 className="font-display text-5xl text-[var(--gold)] sm:text-6xl">{sg}</h2>
         </div>
 
         {car && (
@@ -791,9 +1119,7 @@ function DetailsTab({ claims, paid, user, expenses }: { claims: Record<string, C
             <p className="text-xs text-muted-foreground">
               Leave {car.leave} · Arrive {car.arrive}
             </p>
-            <p className="mt-2 text-xs text-muted-foreground">
-              With {car.people}
-            </p>
+            <p className="mt-2 text-xs text-muted-foreground">With {car.people}</p>
           </section>
         )}
 
@@ -801,21 +1127,17 @@ function DetailsTab({ claims, paid, user, expenses }: { claims: Record<string, C
           <h3 className="font-display text-2xl text-foreground">
             <em className="text-[var(--gold)]">You're bringing</em>
           </h3>
-          {items.length === 0 ? (
-            <p className="mt-3 text-sm italic text-muted-foreground">
-              Nothing signed up yet
-            </p>
+          {allClaimedItems.length === 0 ? (
+            <p className="mt-3 text-sm italic text-muted-foreground">Nothing signed up yet</p>
           ) : (
             <div className="mt-3 flex flex-wrap gap-2">
-              {items.map((it, i) => (
+              {allClaimedItems.map((it, i) => (
                 <span
                   key={i}
                   className="rounded-full border border-[var(--gold)] bg-[var(--gold)]/10 px-3 py-1.5 text-sm text-[var(--gold-soft)]"
                 >
                   {it.label}
-                  {it.note && (
-                    <span className="ml-1 opacity-70">· {it.note}</span>
-                  )}
+                  {it.note && <span className="ml-1 opacity-70">· {it.note}</span>}
                 </span>
               ))}
             </div>
@@ -829,7 +1151,7 @@ function DetailsTab({ claims, paid, user, expenses }: { claims: Record<string, C
             </h3>
             <ul className="mt-3 space-y-2">
               {userExpenses.map((e) => {
-                const hasPaid = !!paid[selectedGirl]?.[e.label];
+                const hasPaid = !!paid[sg]?.[e.label];
                 return (
                   <li key={e.label} className="flex items-center justify-between text-sm">
                     <span className="text-foreground">{e.label}</span>
@@ -858,7 +1180,7 @@ function DetailsTab({ claims, paid, user, expenses }: { claims: Record<string, C
             <em className="text-[var(--gold)]">Itinerary</em>
           </h3>
           <div className="mt-4 space-y-5">
-            {ITINERARY.map((day) => (
+            {itinerary.map((day) => (
               <div key={day.date}>
                 <p className="text-xs uppercase tracking-[0.2em] text-[var(--gold-soft)]">
                   {day.label} · {day.date}
@@ -866,9 +1188,7 @@ function DetailsTab({ claims, paid, user, expenses }: { claims: Record<string, C
                 <ul className="mt-2 space-y-1.5">
                   {day.blocks.map((b, i) => (
                     <li key={i} className="flex gap-3 text-sm">
-                      <span className="w-16 shrink-0 tabular-nums text-muted-foreground">
-                        {b.time}
-                      </span>
+                      <span className="w-16 shrink-0 tabular-nums text-muted-foreground">{b.time}</span>
                       <span className="text-foreground">{b.what}</span>
                     </li>
                   ))}
@@ -888,7 +1208,6 @@ function DetailsTab({ claims, paid, user, expenses }: { claims: Record<string, C
     );
   }
 
-  const houseAddr = "21 Bellevue St Unit #5, Dewey Beach, DE 19971";
   return (
     <div className="space-y-8">
       <section className="rounded-lg border border-border bg-card/40 p-6">
@@ -897,12 +1216,18 @@ function DetailsTab({ claims, paid, user, expenses }: { claims: Record<string, C
         </h2>
         <dl className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-3">
           <div>
-            <dt className="text-xs uppercase tracking-[0.2em] text-[var(--gold-soft)]">
-              Address
-            </dt>
-            <dd className="mt-1 text-sm text-foreground">{houseAddr}</dd>
+            <dt className="text-xs uppercase tracking-[0.2em] text-[var(--gold-soft)]">Address</dt>
+            {adminMode && setHouseInfo ? (
+              <EditableField
+                value={houseInfo.addr}
+                onChange={(v) => setHouseInfo({ ...houseInfo, addr: v })}
+                className="mt-1 text-sm text-foreground"
+              />
+            ) : (
+              <dd className="mt-1 text-sm text-foreground">{houseInfo.addr}</dd>
+            )}
             <a
-              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(houseAddr)}`}
+              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(houseInfo.addr)}`}
               target="_blank"
               rel="noreferrer"
               className="mt-1 inline-block text-xs text-[var(--gold)] underline-offset-2 hover:underline"
@@ -911,20 +1236,28 @@ function DetailsTab({ claims, paid, user, expenses }: { claims: Record<string, C
             </a>
           </div>
           <div>
-            <dt className="text-xs uppercase tracking-[0.2em] text-[var(--gold-soft)]">
-              Check in
-            </dt>
-            <dd className="mt-1 text-sm text-foreground">
-              Thursday, July 30 · 4:00 PM
-            </dd>
+            <dt className="text-xs uppercase tracking-[0.2em] text-[var(--gold-soft)]">Check in</dt>
+            {adminMode && setHouseInfo ? (
+              <EditableField
+                value={houseInfo.checkIn}
+                onChange={(v) => setHouseInfo({ ...houseInfo, checkIn: v })}
+                className="mt-1 text-sm text-foreground"
+              />
+            ) : (
+              <dd className="mt-1 text-sm text-foreground">{houseInfo.checkIn}</dd>
+            )}
           </div>
           <div>
-            <dt className="text-xs uppercase tracking-[0.2em] text-[var(--gold-soft)]">
-              Check out
-            </dt>
-            <dd className="mt-1 text-sm text-foreground">
-              Sunday, August 2 · 10:00 AM
-            </dd>
+            <dt className="text-xs uppercase tracking-[0.2em] text-[var(--gold-soft)]">Check out</dt>
+            {adminMode && setHouseInfo ? (
+              <EditableField
+                value={houseInfo.checkOut}
+                onChange={(v) => setHouseInfo({ ...houseInfo, checkOut: v })}
+                className="mt-1 text-sm text-foreground"
+              />
+            ) : (
+              <dd className="mt-1 text-sm text-foreground">{houseInfo.checkOut}</dd>
+            )}
           </div>
         </dl>
       </section>
@@ -951,20 +1284,76 @@ function DetailsTab({ claims, paid, user, expenses }: { claims: Record<string, C
           <em className="text-[var(--gold)]">Cars & arrivals</em>
         </h2>
         <ul className="mt-5 divide-y divide-border">
-          {CARS.map((c) => (
+          {cars.map((c, idx) => (
             <li key={c.name} className="py-4">
-              <div className="flex flex-wrap items-baseline justify-between gap-2">
-                <span className="font-display text-xl italic text-foreground">
-                  {c.name}
-                </span>
-                <span className="text-xs uppercase tracking-[0.2em] text-[var(--gold-soft)]">
-                  Leave {c.leave} · Arrive {c.arrive}
-                </span>
-              </div>
-              <p className="mt-1 text-sm text-muted-foreground">{c.people}</p>
+              {adminMode && setCars ? (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className="font-display text-xl italic text-foreground shrink-0">{c.name}</span>
+                    <button
+                      onClick={() => setCars(cars.filter((_, i) => i !== idx))}
+                      className="text-xs text-muted-foreground/50 hover:text-red-400"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    <div>
+                      <label className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground">People</label>
+                      <EditableField
+                        value={c.people}
+                        onChange={(v) => setCars(cars.map((car, i) => i === idx ? { ...car, people: v } : car))}
+                        className="text-sm text-muted-foreground"
+                        multiline
+                      />
+                    </div>
+                    <div className="flex gap-3">
+                      <div className="flex-1">
+                        <label className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground">Leave</label>
+                        <EditableField
+                          value={c.leave}
+                          onChange={(v) => setCars(cars.map((car, i) => i === idx ? { ...car, leave: v } : car))}
+                          className="text-sm text-[var(--gold-soft)]"
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <label className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground">Arrive</label>
+                        <EditableField
+                          value={c.arrive}
+                          onChange={(v) => setCars(cars.map((car, i) => i === idx ? { ...car, arrive: v } : car))}
+                          className="text-sm text-[var(--gold-soft)]"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="flex flex-wrap items-baseline justify-between gap-2">
+                    <span className="font-display text-xl italic text-foreground">{c.name}</span>
+                    <span className="text-xs uppercase tracking-[0.2em] text-[var(--gold-soft)]">
+                      Leave {c.leave} · Arrive {c.arrive}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-sm text-muted-foreground">{c.people}</p>
+                </>
+              )}
             </li>
           ))}
         </ul>
+        {adminMode && setCars && (
+          <button
+            onClick={() =>
+              setCars([
+                ...cars,
+                { name: `Car #${cars.length + 1}`, people: "", leave: "", arrive: "" },
+              ])
+            }
+            className="mt-3 w-full rounded-md border border-dashed border-[var(--gold)]/40 py-2 text-xs uppercase tracking-wider text-[var(--gold)] hover:bg-[var(--gold)]/5"
+          >
+            + Add car
+          </button>
+        )}
       </section>
     </div>
   );
@@ -972,119 +1361,131 @@ function DetailsTab({ claims, paid, user, expenses }: { claims: Record<string, C
 
 // ---------- Itinerary ----------
 
-type ItinDay = {
-  date: string;
-  label: string;
-  blocks: { time: string; what: string }[];
-};
+function ItineraryTab({
+  itinerary,
+  setItinerary,
+}: {
+  itinerary: ItinDay[];
+  setItinerary?: (it: ItinDay[]) => void;
+}) {
+  const adminMode = !!setItinerary;
 
-const ITINERARY: ItinDay[] = [
-  {
-    date: "Thu, Jul 30",
-    label: "Thursday",
-    blocks: [
-      { time: "4:00 PM", what: "Official check in" },
-      { time: "5:00 PM", what: "Decorating" },
-      { time: "7:00 PM", what: "Sunset theme · dinner out" },
-    ],
-  },
-  {
-    date: "Fri, Jul 31",
-    label: "Friday",
-    blocks: [
-      { time: "8:00 AM", what: "Pickleball (optional)" },
-      { time: "9:00 AM", what: "Beach day" },
-      { time: "7:00 PM", what: "Glitter theme" },
-      { time: "8:00 PM", what: "Pregame games" },
-      { time: "9:00 PM", what: "Out on the town" },
-    ],
-  },
-  {
-    date: "Sat, Aug 1",
-    label: "Saturday",
-    blocks: [
-      { time: "10:00 AM", what: "Brunch + shops in Rehoboth" },
-      { time: "1:00 PM", what: "Back to bnb · Tini Bikinis boat theme" },
-      { time: "2:30 PM", what: "Walk to boat" },
-      { time: "3:00 PM", what: "Boat" },
-      { time: "6:00 PM", what: "Bonfire" },
-      { time: "9:00 PM", what: "Games & pjs" },
-    ],
-  },
-  {
-    date: "Sun, Aug 2",
-    label: "Sunday",
-    blocks: [
-      { time: "10:00 AM", what: "Checkout · bye-bye brunch" },
-      { time: "12:00 PM", what: "Phoebe / Taylor / Casey need to go" },
-    ],
-  },
-];
+  const updateDay = (dIdx: number, updated: ItinDay) => {
+    if (!setItinerary) return;
+    setItinerary(itinerary.map((d, i) => (i === dIdx ? updated : d)));
+  };
 
-function ItineraryTab() {
   return (
     <div className="space-y-8">
-      {ITINERARY.map((day) => (
+      {itinerary.map((day, dIdx) => (
         <section
           key={day.date}
           className="rounded-lg border border-border bg-card/40 p-6"
         >
-          <div className="flex items-baseline justify-between">
-            <h2 className="font-display text-3xl text-foreground sm:text-4xl">
-              <em className="text-[var(--gold)]">{day.label}</em>
-            </h2>
-            <span className="text-xs uppercase tracking-[0.2em] text-[var(--gold-soft)]">
-              {day.date}
-            </span>
+          <div className="flex items-baseline justify-between gap-3">
+            {adminMode ? (
+              <div className="flex flex-1 gap-2">
+                <EditableField
+                  value={day.label}
+                  onChange={(v) => updateDay(dIdx, { ...day, label: v })}
+                  className="font-display text-3xl text-[var(--gold)] sm:text-4xl"
+                />
+                <EditableField
+                  value={day.date}
+                  onChange={(v) => updateDay(dIdx, { ...day, date: v })}
+                  className="text-xs uppercase tracking-[0.2em] text-[var(--gold-soft)]"
+                />
+              </div>
+            ) : (
+              <>
+                <h2 className="font-display text-3xl text-foreground sm:text-4xl">
+                  <em className="text-[var(--gold)]">{day.label}</em>
+                </h2>
+                <span className="text-xs uppercase tracking-[0.2em] text-[var(--gold-soft)]">
+                  {day.date}
+                </span>
+              </>
+            )}
           </div>
           <ul className="mt-4 divide-y divide-border">
-            {day.blocks.map((b, i) => (
-              <li key={i} className="flex gap-4 py-3">
-                <span className="w-20 shrink-0 text-sm tabular-nums text-[var(--gold-soft)]">
-                  {b.time}
-                </span>
-                <span className="text-sm text-foreground">{b.what}</span>
+            {day.blocks.map((b, bIdx) => (
+              <li key={bIdx} className="flex gap-4 py-3">
+                {adminMode ? (
+                  <>
+                    <EditableField
+                      value={b.time}
+                      onChange={(v) =>
+                        updateDay(dIdx, {
+                          ...day,
+                          blocks: day.blocks.map((bl, i) => (i === bIdx ? { ...bl, time: v } : bl)),
+                        })
+                      }
+                      className="w-20 shrink-0 text-sm tabular-nums text-[var(--gold-soft)]"
+                    />
+                    <EditableField
+                      value={b.what}
+                      onChange={(v) =>
+                        updateDay(dIdx, {
+                          ...day,
+                          blocks: day.blocks.map((bl, i) => (i === bIdx ? { ...bl, what: v } : bl)),
+                        })
+                      }
+                      className="flex-1 text-sm text-foreground"
+                    />
+                    <button
+                      onClick={() =>
+                        updateDay(dIdx, {
+                          ...day,
+                          blocks: day.blocks.filter((_, i) => i !== bIdx),
+                        })
+                      }
+                      className="text-xs text-muted-foreground/50 hover:text-red-400"
+                    >
+                      ✕
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <span className="w-20 shrink-0 text-sm tabular-nums text-[var(--gold-soft)]">{b.time}</span>
+                    <span className="text-sm text-foreground">{b.what}</span>
+                  </>
+                )}
               </li>
             ))}
           </ul>
+          {adminMode && (
+            <button
+              onClick={() =>
+                updateDay(dIdx, {
+                  ...day,
+                  blocks: [...day.blocks, { time: "", what: "" }],
+                })
+              }
+              className="mt-2 w-full rounded border border-dashed border-[var(--gold)]/30 py-1.5 text-[10px] uppercase tracking-wider text-[var(--gold)] hover:bg-[var(--gold)]/5"
+            >
+              + Add block
+            </button>
+          )}
         </section>
       ))}
+      {adminMode && setItinerary && (
+        <button
+          onClick={() =>
+            setItinerary([
+              ...itinerary,
+              { label: "New day", date: "", blocks: [] },
+            ])
+          }
+          className="w-full rounded-lg border border-dashed border-[var(--gold)]/40 py-3 text-xs uppercase tracking-wider text-[var(--gold)] hover:bg-[var(--gold)]/5"
+        >
+          + Add day
+        </button>
+      )}
     </div>
   );
 }
 
-// ---------- Admin ----------
-
-type Expense = {
-  label: string;
-  total: number;
-  payer: string;
-  perPerson: number;
-  splitAmong: Name[];
-  note?: string;
-};
-
-const INITIAL_EXPENSES: Expense[] = [
-  {
-    label: "House",
-    total: 3800,
-    payer: "Sabrina",
-    perPerson: 380,
-    splitAmong: [
-      "Nicole", "Sabrina", "Lara", "Jess", "Isabel",
-      "Kait", "Phoebe", "Jane", "Char", "Casey",
-    ],
-    note: "Split 10 ways (Taylor not included).",
-  },
-  {
-    label: "Boat — Octolounge Kraken",
-    total: 800,
-    payer: "Sabrina",
-    perPerson: 80,
-    splitAmong: [...NAMES],
-    note: "$100 deposit paid 4/7. Split 10 ways.",
-  },
-];
+// ---------- Spend / Payments ----------
 
 function SpendTab({
   paid,
@@ -1183,11 +1584,9 @@ function SpendTab({
         </div>
         <p className="mt-1 text-xs uppercase tracking-[0.2em] text-[var(--gold-soft)]">
           {totalPaid} of {totalRequired} paid
-          {isAdmin && (
-            <span className="ml-2 normal-case tracking-normal text-[var(--gold)]">
-              · admin: tap any to toggle
-            </span>
-          )}
+          <span className="ml-2 normal-case tracking-normal text-[var(--gold)]">
+            · tap any to toggle
+          </span>
         </p>
 
         {view === "checklist" ? (
@@ -1214,7 +1613,6 @@ function SpendTab({
               <tbody>
                 {visibleNames.map((n) => {
                   const isMe = n === user;
-                  const canToggle = isMe || isAdmin;
                   return (
                     <tr key={n}>
                       <td className="border-b border-border px-2 py-2 text-foreground">
@@ -1239,13 +1637,12 @@ function SpendTab({
                             className="border-b border-border px-2 py-2 text-center"
                           >
                             <button
-                              onClick={() => canToggle && onToggle(n, e.label)}
-                              disabled={!canToggle}
-                              className={`inline-flex h-6 w-6 items-center justify-center rounded border text-xs transition ${
+                              onClick={() => onToggle(n, e.label)}
+                              className={`inline-flex h-6 w-6 cursor-pointer items-center justify-center rounded border text-xs transition hover:border-[var(--gold)] ${
                                 hasPaid
                                   ? "border-green-700/50 bg-green-900/30 text-green-400"
                                   : "border-border bg-background/30 text-muted-foreground"
-                              } ${canToggle ? "cursor-pointer hover:border-[var(--gold)]" : "cursor-default"}`}
+                              }`}
                               aria-label={hasPaid ? "Paid" : "Not paid"}
                             >
                               {hasPaid ? "✓" : ""}
@@ -1263,7 +1660,6 @@ function SpendTab({
           <ul className="mt-5 space-y-5">
             {visibleNames.map((n) => {
               const isMe = n === user;
-              const canToggle = isMe || isAdmin;
               const userExpenses = expenses.filter((e) => e.splitAmong.includes(n));
               return (
                 <li key={n} className="border-b border-border pb-4 last:border-0">
@@ -1287,13 +1683,12 @@ function SpendTab({
                             </span>
                           </span>
                           <button
-                            onClick={() => canToggle && onToggle(n, e.label)}
-                            disabled={!canToggle}
-                            className={`rounded-full border px-3 py-1 text-xs font-medium uppercase tracking-wider transition ${
+                            onClick={() => onToggle(n, e.label)}
+                            className={`cursor-pointer rounded-full border px-3 py-1 text-xs font-medium uppercase tracking-wider transition hover:border-[var(--gold)] ${
                               hasPaid
                                 ? "border-green-700/40 bg-green-900/20 text-green-400"
                                 : "border-border bg-background/30 text-muted-foreground"
-                            } ${canToggle ? "cursor-pointer hover:border-[var(--gold)]" : "cursor-default"}`}
+                            }`}
                           >
                             {hasPaid ? "Paid" : "Not paid"}
                           </button>
@@ -1308,143 +1703,134 @@ function SpendTab({
         )}
       </section>
 
-      {isAdmin && (
-        <section className="rounded-lg border border-border bg-card/40 p-6">
-          <div className="flex items-baseline justify-between">
-            <h3 className="font-display text-2xl text-foreground">
-              <em className="text-[var(--gold)]">Manage expenses</em>
-            </h3>
-            {!adding && (
-              <button
-                onClick={() => setAdding(true)}
-                className="rounded-md bg-[var(--gold)] px-3 py-1.5 text-xs uppercase tracking-wider text-[var(--olive-deep)]"
-              >
-                + Add expense
-              </button>
-            )}
-          </div>
+      <section className="rounded-lg border border-border bg-card/40 p-6">
+        <div className="flex items-baseline justify-between">
+          <h3 className="font-display text-2xl text-foreground">
+            <em className="text-[var(--gold)]">Manage expenses</em>
+          </h3>
+          {!adding && (
+            <button
+              onClick={() => setAdding(true)}
+              className="rounded-md bg-[var(--gold)] px-3 py-1.5 text-xs uppercase tracking-wider text-[var(--olive-deep)]"
+            >
+              + Add expense
+            </button>
+          )}
+        </div>
 
-          {adding && (
-            <div className="mt-4 space-y-3 rounded-md border border-[var(--gold)]/30 bg-background/60 p-4">
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div>
-                  <label className="mb-1 block text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-                    Label
-                  </label>
-                  <input
-                    value={newLabel}
-                    onChange={(e) => setNewLabel(e.target.value)}
-                    placeholder="e.g. Brunch"
-                    className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-[var(--gold)]"
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-                    Total ($)
-                  </label>
-                  <input
-                    type="number"
-                    min={0}
-                    value={newTotal || ""}
-                    onChange={(e) => setNewTotal(parseFloat(e.target.value) || 0)}
-                    className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-[var(--gold)]"
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-                    Paid by
-                  </label>
-                  <select
-                    value={newPayer}
-                    onChange={(e) => setNewPayer(e.target.value as Name)}
-                    className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-[var(--gold)]"
-                  >
-                    {NAMES.map((n) => (
-                      <option key={n} value={n}>
-                        {n}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="mb-1 block text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-                    Per person
-                  </label>
-                  <div className="rounded-md border border-border bg-background/40 px-3 py-2 text-sm text-[var(--gold-soft)]">
-                    $
-                    {newSplit.length > 0
-                      ? (Math.round((newTotal / newSplit.length) * 100) / 100).toFixed(2)
-                      : "—"}
-                  </div>
-                </div>
+        {adding && (
+          <div className="mt-4 space-y-3 rounded-md border border-[var(--gold)]/30 bg-background/60 p-4">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <label className="mb-1 block text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                  Label
+                </label>
+                <input
+                  value={newLabel}
+                  onChange={(e) => setNewLabel(e.target.value)}
+                  placeholder="e.g. Brunch"
+                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-[var(--gold)]"
+                />
               </div>
               <div>
                 <label className="mb-1 block text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-                  Split among ({newSplit.length})
+                  Total ($)
                 </label>
-                <div className="flex flex-wrap gap-1.5">
-                  {NAMES.map((n) => {
-                    const on = newSplit.includes(n);
-                    return (
-                      <button
-                        key={n}
-                        type="button"
-                        onClick={() =>
-                          setNewSplit(
-                            on ? newSplit.filter((x) => x !== n) : [...newSplit, n],
-                          )
-                        }
-                        className={`rounded-full border px-2.5 py-1 text-xs transition ${
-                          on
-                            ? "border-[var(--gold)] bg-[var(--gold)]/10 text-[var(--gold-soft)]"
-                            : "border-border bg-background/30 text-muted-foreground"
-                        }`}
-                      >
-                        {n}
-                      </button>
-                    );
-                  })}
-                </div>
+                <input
+                  type="number"
+                  min={0}
+                  value={newTotal || ""}
+                  onChange={(e) => setNewTotal(parseFloat(e.target.value) || 0)}
+                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-[var(--gold)]"
+                />
               </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={addExpense}
-                  className="rounded-md bg-[var(--gold)] px-3 py-2 text-xs uppercase tracking-wider text-[var(--olive-deep)]"
+              <div>
+                <label className="mb-1 block text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                  Paid by
+                </label>
+                <select
+                  value={newPayer}
+                  onChange={(e) => setNewPayer(e.target.value as Name)}
+                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-[var(--gold)]"
                 >
-                  Save
-                </button>
-                <button
-                  onClick={() => setAdding(false)}
-                  className="rounded-md border border-border px-3 py-2 text-xs uppercase tracking-wider text-muted-foreground"
-                >
-                  Cancel
-                </button>
+                  {NAMES.map((n) => (
+                    <option key={n} value={n}>{n}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="mb-1 block text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                  Per person
+                </label>
+                <div className="rounded-md border border-border bg-background/40 px-3 py-2 text-sm text-[var(--gold-soft)]">
+                  ${newSplit.length > 0
+                    ? (Math.round((newTotal / newSplit.length) * 100) / 100).toFixed(2)
+                    : "—"}
+                </div>
               </div>
             </div>
-          )}
+            <div>
+              <label className="mb-1 block text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                Split among ({newSplit.length})
+              </label>
+              <div className="flex flex-wrap gap-1.5">
+                {NAMES.map((n) => {
+                  const on = newSplit.includes(n);
+                  return (
+                    <button
+                      key={n}
+                      type="button"
+                      onClick={() =>
+                        setNewSplit(on ? newSplit.filter((x) => x !== n) : [...newSplit, n])
+                      }
+                      className={`rounded-full border px-2.5 py-1 text-xs transition ${
+                        on
+                          ? "border-[var(--gold)] bg-[var(--gold)]/10 text-[var(--gold-soft)]"
+                          : "border-border bg-background/30 text-muted-foreground"
+                      }`}
+                    >
+                      {n}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={addExpense}
+                className="rounded-md bg-[var(--gold)] px-3 py-2 text-xs uppercase tracking-wider text-[var(--olive-deep)]"
+              >
+                Save
+              </button>
+              <button
+                onClick={() => setAdding(false)}
+                className="rounded-md border border-border px-3 py-2 text-xs uppercase tracking-wider text-muted-foreground"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
 
-          <ul className="mt-4 divide-y divide-border">
-            {expenses.map((e) => (
-              <li key={e.label} className="flex items-baseline justify-between gap-3 py-3 text-sm">
-                <div className="min-w-0">
-                  <span className="text-foreground">{e.label}</span>
-                  <span className="ml-2 text-xs text-muted-foreground">
-                    ${e.total} · ${e.perPerson}/person · {e.splitAmong.length} people · paid by {e.payer}
-                  </span>
-                </div>
-                <button
-                  onClick={() => removeExpense(e.label)}
-                  className="shrink-0 text-xs text-muted-foreground hover:text-red-400"
-                >
-                  Delete
-                </button>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
+        <ul className="mt-4 divide-y divide-border">
+          {expenses.map((e) => (
+            <li key={e.label} className="flex items-baseline justify-between gap-3 py-3 text-sm">
+              <div className="min-w-0">
+                <span className="text-foreground">{e.label}</span>
+                <span className="ml-2 text-xs text-muted-foreground">
+                  ${e.total} · ${e.perPerson}/person · {e.splitAmong.length} people · paid by {e.payer}
+                </span>
+              </div>
+              <button
+                onClick={() => removeExpense(e.label)}
+                className="shrink-0 text-xs text-muted-foreground hover:text-red-400"
+              >
+                Delete
+              </button>
+            </li>
+          ))}
+        </ul>
+      </section>
     </div>
   );
 }
-
-
