@@ -8,17 +8,31 @@ const KV_KEY = "bach_content_v1";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function getKV(): any | null {
   try {
-    // 1. Try Nitro v3's global process proxy (the new standard)
-    const env = (globalThis as any).process?.env;
-    if (env?.BACH_KV) return env.BACH_KV;
-
-    // 2. Fallback to hidden Request properties (checks both v3 and v2 locations)
     const request = getRequest() as any;
-    return request?.runtime?.cloudflare?.env?.BACH_KV
-        ?? request?.context?.cloudflare?.env?.BACH_KV
-        ?? null;
+
+    // Log every top-level key on the request so we can find where CF bindings live
+    console.log("[getKV] request keys:", Object.keys(request ?? {}));
+    console.log("[getKV] globalThis.process.env keys:", Object.keys((globalThis as any).process?.env ?? {}));
+
+    // Try every plausible path
+    const candidates = [
+      (globalThis as any).process?.env?.BACH_KV,
+      request?.runtime?.cloudflare?.env?.BACH_KV,
+      request?.context?.cloudflare?.env?.BACH_KV,
+      request?.cf?.env?.BACH_KV,
+      request?.env?.BACH_KV,
+      (globalThis as any).__env__?.BACH_KV,
+      (globalThis as any).BACH_KV,
+    ];
+
+    console.log("[getKV] candidate results:", candidates.map((c, i) => `[${i}]: ${c != null ? "FOUND" : "null"}`));
+
+    for (const c of candidates) {
+      if (c != null) return c;
+    }
+    return null;
   } catch (err) {
-    console.error("Error accessing KV binding:", err);
+    console.error("[getKV] Error:", err);
     return null;
   }
 }
@@ -26,14 +40,14 @@ function getKV(): any | null {
 export const loadContent = createServerFn({ method: "GET" }).handler(async () => {
   const kv = getKV();
   if (!kv) {
-    console.warn("KV Storage not found during load! Falling back to default.");
+    console.warn("[loadContent] KV not found, returning null");
     return null;
   }
   try {
     const raw = await kv.get(KV_KEY);
     return raw ? JSON.parse(raw) : null;
   } catch (err) {
-    console.error("Failed to read from KV:", err);
+    console.error("[loadContent] KV read failed:", err);
     return null;
   }
 });
@@ -52,12 +66,12 @@ export const saveContent = createServerFn({ method: "POST" })
 
     const kv = getKV();
     if (!kv) {
-      console.error("CRITICAL: KV Storage not configured during saveContent!");
+      console.error("[saveContent] KV binding not found — cannot save");
       throw new Error("Storage not configured");
     }
 
     await kv.put(KV_KEY, JSON.stringify(data.content));
-    console.log("✅ Successfully saved content to Cloudflare KV!");
+    console.log("[saveContent] ✅ Saved to KV");
 
     return { ok: true };
   });
