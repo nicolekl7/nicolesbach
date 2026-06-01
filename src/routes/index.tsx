@@ -1068,6 +1068,8 @@ function SpendTab({
   user: Name | "";
   onToggle: (name: Name, label: string) => void;
 }) {
+  const isAdmin = user === ADMIN;
+  const visibleNames = user && !isAdmin ? [user as Name] : NAMES;
   const totalRequired = NAMES.reduce(
     (sum, n) => sum + EXPENSES.filter((e) => e.splitAmong.includes(n)).length,
     0,
@@ -1088,10 +1090,12 @@ function SpendTab({
         </h2>
         <p className="mt-1 text-xs uppercase tracking-[0.2em] text-[var(--gold-soft)]">
           {totalPaid} of {totalRequired} paid
+          {isAdmin && <span className="ml-2 normal-case tracking-normal text-[var(--gold)]">· admin: tap any to toggle</span>}
         </p>
         <ul className="mt-5 space-y-5">
-          {NAMES.map((n) => {
+          {visibleNames.map((n) => {
             const isMe = n === user;
+            const canToggle = isMe || isAdmin;
             const expenses = EXPENSES.filter((e) => e.splitAmong.includes(n));
             return (
               <li key={n} className="border-b border-border pb-4 last:border-0">
@@ -1115,13 +1119,13 @@ function SpendTab({
                           </span>
                         </span>
                         <button
-                          onClick={() => isMe && onToggle(n, e.label)}
-                          disabled={!isMe}
+                          onClick={() => canToggle && onToggle(n, e.label)}
+                          disabled={!canToggle}
                           className={`rounded-full border px-3 py-1 text-xs font-medium uppercase tracking-wider transition ${
                             hasPaid
                               ? "border-green-700/40 bg-green-900/20 text-green-400"
                               : "border-border bg-background/30 text-muted-foreground"
-                          } ${isMe ? "cursor-pointer hover:border-[var(--gold)]" : "cursor-default"}`}
+                          } ${canToggle ? "cursor-pointer hover:border-[var(--gold)]" : "cursor-default"}`}
                         >
                           {hasPaid ? "Paid" : "Not paid"}
                         </button>
@@ -1132,6 +1136,7 @@ function SpendTab({
               </li>
             );
           })}
+
         </ul>
       </section>
     </div>
