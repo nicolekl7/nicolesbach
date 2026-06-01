@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { getRequestEvent } from "@tanstack/react-start/server";
+import { getEvent } from "@tanstack/react-start/server";
 import { z } from "zod";
 
 const ADMIN_PASSWORD = "nyler";
@@ -8,7 +8,8 @@ const KV_KEY = "bach_content_v1";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function getKV(): any | null {
   try {
-    const event = getRequestEvent();
+    // Swapped getRequestEvent() for getEvent() to access the Nitro context
+    const event = getEvent();
     return (event as any)?.context?.cloudflare?.env?.BACH_KV ?? null;
   } catch {
     return null;
