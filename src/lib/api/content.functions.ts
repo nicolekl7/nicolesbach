@@ -4,16 +4,29 @@ import { z } from "zod";
 const ADMIN_PASSWORD = "nyler";
 const KV_KEY = "bach_content_v1";
 
+// 1. Make this an async function to support dynamic imports
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function getKV(): any | null {
-  // Grab the database directly from the global cache we set in server.ts!
-  return (globalThis as any)._cloudflareEnv?.BACH_KV ?? null;
+async function getKV(): Promise<any | null> {
+  try {
+    // 2. Hide the import string in a variable and use @vite-ignore. 
+    // This tricks Vite into completely ignoring the import during the browser build, 
+    // preventing the Rollup crash, while still working perfectly on the server!
+    const vinxi = "vinxi/http";
+    const { getEvent } = await import(/* @vite-ignore */ vinxi);
+    
+    const event = getEvent();
+    return event?.context?.cloudflare?.env?.BACH_KV ?? null;
+  } catch (err) {
+    console.error("Vinxi event error:", err);
+    return null;
+  }
 }
 
 export const loadContent = createServerFn({ method: "GET" }).handler(async () => {
-  const kv = getKV();
+  // 3. Add 'await' here since getKV is now async
+  const kv = await getKV(); 
   if (!kv) {
-    console.warn("KV Storage not found! Falling back to default.");
+    console.warn("KV Storage not found during load! Falling back to default.");
     return null;
   }
   try {
@@ -37,9 +50,14 @@ export const saveContent = createServerFn({ method: "POST" })
       throw new Error("Unauthorized");
     }
     
-    const kv = getKV();
+    // 4. Add 'await' here
+    const kv = await getKV();
+    
     if (!kv) {
-      throw new Error("Storage not configured");
+      // If it STILL fails, this will throw the exact global keys to your screen
+      // so we can see exactly what Cloudflare is doing under the hood.
+      const gKeys = Object.keys(globalThis).filter(k => k.toLowerCase().includes('env') || k.includes('cf')).join(', ');
+      throw new Error(`Storage missing. Globals found: ${gKeys || 'none'}`);
     }
     
     await kv.put(KV_KEY, JSON.stringify(data.content));
