@@ -1512,26 +1512,30 @@ function ItineraryTab({
               <li key={bIdx} className="flex gap-4 py-3">
                 {adminMode ? (
                   <>
-                    <EditableField
-                      value={b.time}
-                      onChange={(v) =>
-                        updateDay(dIdx, {
-                          ...day,
-                          blocks: day.blocks.map((bl, i) => (i === bIdx ? { ...bl, time: v } : bl)),
-                        })
-                      }
-                      className="w-20 shrink-0 text-sm tabular-nums text-[var(--gold-soft)]"
-                    />
-                    <EditableField
-                      value={b.what}
-                      onChange={(v) =>
-                        updateDay(dIdx, {
-                          ...day,
-                          blocks: day.blocks.map((bl, i) => (i === bIdx ? { ...bl, what: v } : bl)),
-                        })
-                      }
-                      className="flex-1 text-sm text-foreground"
-                    />
+                    <div className="w-24 shrink-0">
+                      <EditableField
+                        value={b.time}
+                        onChange={(v) =>
+                          updateDay(dIdx, {
+                            ...day,
+                            blocks: day.blocks.map((bl, i) => (i === bIdx ? { ...bl, time: v } : bl)),
+                          })
+                        }
+                        className="text-sm tabular-nums text-[var(--gold-soft)]"
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <EditableField
+                        value={b.what}
+                        onChange={(v) =>
+                          updateDay(dIdx, {
+                            ...day,
+                            blocks: day.blocks.map((bl, i) => (i === bIdx ? { ...bl, what: v } : bl)),
+                          })
+                        }
+                        className="text-sm text-foreground"
+                      />
+                    </div>
                     <button
                       onClick={() =>
                         updateDay(dIdx, {
