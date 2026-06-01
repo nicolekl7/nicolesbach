@@ -300,7 +300,7 @@ export default function BachelorettePage() {
       </div>
 
       <main className="relative z-10 mx-auto max-w-3xl px-5 py-8 pb-24">
-        {tab === "details" && <DetailsTab claims={claims} paid={paid} user={user} />}
+        {tab === "details" && <DetailsTab claims={claims} paid={paid} user={user} expenses={expenses} />}
         {tab === "itinerary" && <ItineraryTab />}
         {tab === "signup" && (
           <>
