@@ -822,13 +822,13 @@ function DetailsTab({ claims, paid, user, expenses }: { claims: Record<string, C
           )}
         </section>
 
-        {expenses.length > 0 && (
+        {userExpenses.length > 0 && (
           <section className="rounded-lg border border-border bg-card/40 p-6">
             <h3 className="font-display text-2xl text-foreground">
               <em className="text-[var(--gold)]">Payment</em>
             </h3>
             <ul className="mt-3 space-y-2">
-              {expenses.map((e) => {
+              {userExpenses.map((e) => {
                 const hasPaid = !!paid[selectedGirl]?.[e.label];
                 return (
                   <li key={e.label} className="flex items-center justify-between text-sm">
@@ -848,7 +848,7 @@ function DetailsTab({ claims, paid, user, expenses }: { claims: Record<string, C
               })}
             </ul>
             <p className="mt-3 text-xs text-muted-foreground">
-              Owed to {expenses[0]?.payer}
+              Owed to {userExpenses[0]?.payer}
             </p>
           </section>
         )}
