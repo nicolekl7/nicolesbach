@@ -1080,24 +1080,29 @@ function ItemRow({
           )}
           {claims.length > 0 && (
             <p className="mt-1.5 text-xs text-muted-foreground">
-              {othersGrouped.map((g, i) => (
-                <span key={i}>
-                  {g.name}
-                  {g.count > 1 ? ` ×${g.count}` : ""}
-                  {g.notes.length > 0 && (
-                    <span className="text-muted-foreground/70"> ({g.notes.join(", ")})</span>
-                  )}
-                  {i < othersGrouped.length - 1 ? ", " : ""}
-                </span>
-              ))}
+              {othersGrouped.map((g, i) => {
+                const uniqueNotes = [...new Set(g.notes)];
+                const notePart = uniqueNotes.length > 0 ? uniqueNotes.join(", ") : null;
+                return (
+                  <span key={i}>
+                    {g.name}
+                    {g.count > 1 ? ` ×${g.count}` : ""}
+                    {notePart && <span className="text-muted-foreground/70"> ({notePart})</span>}
+                    {i < othersGrouped.length - 1 || userOnIt ? ", " : ""}
+                  </span>
+                );
+              })}
               {userOnIt && (
-                <span className={othersGrouped.length > 0 ? " · " : ""}>
+                <span>
                   <span className="text-[var(--gold)]">
                     you{userCount > 1 ? ` ×${userCount}` : ""}
                   </span>
-                  {userNotes.length > 0 && (
-                    <span className="text-muted-foreground/70"> ({userNotes.join(", ")})</span>
-                  )}
+                  {(() => {
+                    const uniqueUserNotes = [...new Set(userNotes)];
+                    return uniqueUserNotes.length > 0
+                      ? <span className="text-muted-foreground/70"> ({uniqueUserNotes.join(", ")})</span>
+                      : null;
+                  })()}
                 </span>
               )}
             </p>
