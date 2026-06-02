@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { loadContent, saveContent } from "../lib/api/content.functions";
 
@@ -1660,10 +1660,28 @@ function ItineraryTab({
   setItinerary?: (it: ItinDay[]) => void;
 }) {
   const adminMode = !!setItinerary;
+  const dragBlock = useRef<{ dIdx: number; bIdx: number } | null>(null);
+  const [dragOver, setDragOver] = useState<{ dIdx: number; bIdx: number } | null>(null);
 
   const updateDay = (dIdx: number, updated: ItinDay) => {
     if (!setItinerary) return;
     setItinerary(itinerary.map((d, i) => (i === dIdx ? updated : d)));
+  };
+
+  const onDragStart = (dIdx: number, bIdx: number) => {
+    dragBlock.current = { dIdx, bIdx };
+  };
+
+  const onDrop = (dIdx: number, bIdx: number) => {
+    if (!setItinerary || !dragBlock.current) return;
+    const { dIdx: fromD, bIdx: fromB } = dragBlock.current;
+    if (fromD !== dIdx || fromB === bIdx) { dragBlock.current = null; setDragOver(null); return; }
+    const blocks = [...itinerary[dIdx].blocks];
+    const [moved] = blocks.splice(fromB, 1);
+    blocks.splice(bIdx, 0, moved);
+    updateDay(dIdx, { ...itinerary[dIdx], blocks });
+    dragBlock.current = null;
+    setDragOver(null);
   };
 
   return (
@@ -1700,9 +1718,19 @@ function ItineraryTab({
           </div>
           <ul className="mt-4 divide-y divide-border">
             {day.blocks.map((b, bIdx) => (
-              <li key={bIdx} className="flex gap-4 py-3">
+              <li
+                key={bIdx}
+                draggable={adminMode}
+                onDragStart={() => onDragStart(dIdx, bIdx)}
+                onDragOver={(e) => { e.preventDefault(); setDragOver({ dIdx, bIdx }); }}
+                onDragLeave={() => setDragOver(null)}
+                onDrop={() => onDrop(dIdx, bIdx)}
+                onDragEnd={() => { dragBlock.current = null; setDragOver(null); }}
+                className={`flex gap-4 py-3 transition-colors ${adminMode ? "cursor-grab active:cursor-grabbing" : ""} ${dragOver?.dIdx === dIdx && dragOver?.bIdx === bIdx ? "bg-[var(--gold)]/10 rounded" : ""}`}
+              >
                 {adminMode ? (
                   <>
+                    <span className="mt-1 shrink-0 cursor-grab text-[var(--gold)]/40 select-none" title="Drag to reorder">⠿</span>
                     <div className="w-24 shrink-0">
                       <EditableField
                         value={b.time}
