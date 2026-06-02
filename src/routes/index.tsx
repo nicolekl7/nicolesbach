@@ -323,6 +323,7 @@ export default function BachelorettePage() {
       if (data.itinerary) setItinerary(data.itinerary as ItinDay[]);
       if (data.cars) setCars(data.cars as typeof DEFAULT_CARS);
       if (data.houseInfo) setHouseInfo(data.houseInfo as typeof DEFAULT_HOUSE);
+      if (data.claims) setClaims(data.claims as Record<string, Claim[]>);
     }).catch(() => {});
   }, []);
 
@@ -334,7 +335,7 @@ export default function BachelorettePage() {
       await saveContent({
         data: {
           password: "nyler",
-          content: { themes, sections, itinerary, cars, houseInfo },
+          content: { themes, sections, itinerary, cars, houseInfo, claims },
         },
       });
       toast.success("Saved!");
@@ -344,6 +345,15 @@ export default function BachelorettePage() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const saveClaims = (nextClaims: Record<string, Claim[]>) => {
+    saveContent({
+      data: {
+        password: "nyler",
+        content: { themes, sections, itinerary, cars, houseInfo, claims: nextClaims },
+      },
+    }).catch((err) => console.error("Auto-save claims failed:", err));
   };
 
   const setThemesA = (v: Theme[]) => setThemes(v);
@@ -402,7 +412,9 @@ export default function BachelorettePage() {
       name: user as Name,
       note,
     }));
-    setClaims({ ...claims, [item.id]: [...current, ...additions] });
+    const nextClaims = { ...claims, [item.id]: [...current, ...additions] };
+    setClaims(nextClaims);
+    saveClaims(nextClaims);
     setFormFor(null);
     setFormNote("");
     setFormAmount(1);
@@ -419,7 +431,9 @@ export default function BachelorettePage() {
     const realIdx = current.length - 1 - revIdx;
     const next = [...current];
     next.splice(realIdx, 1);
-    setClaims({ ...claims, [item.id]: next });
+    const nextClaims = { ...claims, [item.id]: next };
+    setClaims(nextClaims);
+    saveClaims(nextClaims);
     toast(`Removed one ${item.label.toLowerCase()}`);
   };
 
