@@ -296,6 +296,8 @@ export default function BachelorettePage() {
   const [claims, setClaims] = useState<Record<string, Claim[]>>(INITIAL_CLAIMS);
   const [tab, setTab] = useState<"details" | "itinerary" | "signup" | "vibes" | "payments">("details");
   const [formFor, setFormFor] = useState<string | null>(null);
+  const [pendingItemId, setPendingItemId] = useState<string | null>(null);
+  const [showNamePicker, setShowNamePicker] = useState(false);
   const [formAmount, setFormAmount] = useState(1);
   const [formNote, setFormNote] = useState("");
   const [paid, setPaid] = useState<PaidMap>(ALL_PAID_FALSE);
@@ -375,18 +377,12 @@ export default function BachelorettePage() {
   ).length;
   const progress = Math.round((finiteWithSomeone / finiteItems.length) * 100);
 
-  const requireUser = () => {
-    if (!user) {
-      toast.error("Pick your name first", {
-        description: "Scroll up and select who you are.",
-      });
-      return false;
-    }
-    return true;
-  };
-
   const openForm = (item: Item) => {
-    if (!requireUser()) return;
+    if (!user) {
+      setPendingItemId(item.id);
+      setShowNamePicker(true);
+      return;
+    }
     if (item.qty === "byo") return;
     const current = claims[item.id] ?? [];
     if (typeof item.qty === "number" && current.length >= item.qty) return;
@@ -395,8 +391,26 @@ export default function BachelorettePage() {
     setFormNote("");
   };
 
+  const pickNameAndProceed = (name: Name) => {
+    setUser(name);
+    setShowNamePicker(false);
+    if (pendingItemId) {
+      const allItems = sections.flatMap((s) => s.items);
+      const item = allItems.find((i) => i.id === pendingItemId);
+      setPendingItemId(null);
+      if (item && item.qty !== "byo") {
+        const current = claims[item.id] ?? [];
+        if (typeof item.qty !== "number" || current.length < item.qty) {
+          setFormFor(item.id);
+          setFormAmount(1);
+          setFormNote("");
+        }
+      }
+    }
+  };
+
   const submitForm = (item: Item) => {
-    if (!requireUser()) return;
+    if (!user) return;
     const current = claims[item.id] ?? [];
     let amount = Math.max(1, Math.floor(formAmount || 1));
     if (typeof item.qty === "number") {
@@ -424,7 +438,7 @@ export default function BachelorettePage() {
   };
 
   const unclaim = (item: Item) => {
-    if (!requireUser()) return;
+    if (!user) { setShowNamePicker(true); return; }
     const current = claims[item.id] ?? [];
     const revIdx = [...current].reverse().findIndex((c) => c.name === user);
     if (revIdx === -1) return;
@@ -470,6 +484,35 @@ export default function BachelorettePage() {
           >
             Exit
           </button>
+        </div>
+      )}
+
+      {/* Name picker modal */}
+      {showNamePicker && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
+          <div className="w-full max-w-sm rounded-lg border border-border bg-card p-6 shadow-xl">
+            <h2 className="font-display text-2xl text-foreground">
+              <em className="text-[var(--gold)]">Who are you?</em>
+            </h2>
+            <p className="mt-1 text-sm text-muted-foreground">Pick your name to sign up</p>
+            <div className="mt-5 flex flex-wrap gap-2">
+              {NAMES.map((n) => (
+                <button
+                  key={n}
+                  onClick={() => pickNameAndProceed(n)}
+                  className="rounded-full border border-[var(--gold)]/50 px-4 py-2 text-sm text-[var(--gold)] transition hover:bg-[var(--gold)]/10"
+                >
+                  {n}
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={() => { setShowNamePicker(false); setPendingItemId(null); }}
+              className="mt-4 text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+            >
+              Cancel
+            </button>
+          </div>
         </div>
       )}
 
