@@ -1386,7 +1386,12 @@ function DetailsTab({
         }
       }
     }
-    const allClaimedItems = Object.entries(itemCounts).map(([label, { count, note }]) => ({ label, count, note }));
+    const allItems = sections.flatMap((s) => s.items);
+    const allClaimedItems = Object.entries(itemCounts).map(([itemId, { count, note }]) => ({
+      label: allItems.find((i) => i.id === itemId)?.label ?? itemId,
+      count,
+      note,
+    }));
     const userExpenses = expenses.filter((e) => e.splitAmong.includes(sg));
     const earlyLeavers = ["Phoebe", "Taylor", "Casey"];
     const leavesEarly = earlyLeavers.includes(sg);
