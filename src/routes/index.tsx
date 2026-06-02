@@ -300,6 +300,11 @@ export default function BachelorettePage() {
   const [showNamePicker, setShowNamePicker] = useState(false);
   const [formAmount, setFormAmount] = useState(1);
   const [formNote, setFormNote] = useState("");
+  const [showAddItem, setShowAddItem] = useState(false);
+  const [addItemName, setAddItemName] = useState("");
+  const [addItemCategory, setAddItemCategory] = useState<"Bar" | "Beach" | "Kitchen" | "Home" | "Other">("Other");
+  const [addItemQty, setAddItemQty] = useState(1);
+  const [addItemNote, setAddItemNote] = useState("");
   const [paid, setPaid] = useState<PaidMap>(ALL_PAID_FALSE);
   const [expenses, setExpenses] = useState<Expense[]>(INITIAL_EXPENSES);
 
@@ -451,6 +456,53 @@ export default function BachelorettePage() {
     toast(`Removed one ${item.label.toLowerCase()}`);
   };
 
+  const submitAddItem = () => {
+    if (!addItemName.trim()) return;
+    if (!user) { setShowNamePicker(true); return; }
+    const catToSectionId: Record<string, string> = {
+      Bar: "bar", Beach: "beach", Kitchen: "kitchen", Home: "house",
+    };
+    const targetId = catToSectionId[addItemCategory];
+    const id = `custom-${Date.now()}`;
+    const newItem: Item = {
+      id,
+      label: addItemName.trim(),
+      qty: addItemQty,
+      ...(addItemNote.trim() ? { hint: addItemNote.trim() } : {}),
+    };
+    const nextSections = sections.map((s) => {
+      if (targetId ? s.id === targetId : s === sections[sections.length - 1]) {
+        return { ...s, items: [...s.items, newItem] };
+      }
+      return s;
+    });
+    if (!targetId) {
+      nextSections[nextSections.length - 1] = {
+        ...nextSections[nextSections.length - 1],
+        items: [...nextSections[nextSections.length - 1].items, newItem],
+      };
+    }
+    setSectionsA(nextSections);
+    const additions: Claim[] = Array.from({ length: addItemQty }, () => ({
+      name: user as Name,
+      ...(addItemNote.trim() ? { note: addItemNote.trim() } : {}),
+    }));
+    const nextClaims = { ...claims, [id]: additions };
+    setClaims(nextClaims);
+    saveContent({
+      data: {
+        password: "nyler",
+        content: { themes, sections: nextSections, itinerary, cars, houseInfo, claims: nextClaims },
+      },
+    }).catch((err) => console.error("Auto-save custom item failed:", err));
+    setShowAddItem(false);
+    setAddItemName("");
+    setAddItemCategory("Other");
+    setAddItemQty(1);
+    setAddItemNote("");
+    toast.success(`Added "${newItem.label}" and signed you up!`);
+  };
+
   const handleAdminSubmit = () => {
     if (adminPw === "nyler") {
       setAdminMode(true);
@@ -512,6 +564,78 @@ export default function BachelorettePage() {
             >
               Cancel
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Add custom item modal */}
+      {showAddItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
+          <div className="w-full max-w-sm rounded-lg border border-border bg-card p-6 shadow-xl">
+            <h2 className="font-display text-2xl text-foreground">
+              <em className="text-[var(--gold)]">Bring something else</em>
+            </h2>
+            <p className="mt-1 text-sm text-muted-foreground">Adding as {user}</p>
+            <div className="mt-5 space-y-4">
+              <div>
+                <label className="mb-1 block text-xs uppercase tracking-[0.2em] text-muted-foreground">Item name</label>
+                <input
+                  value={addItemName}
+                  onChange={(e) => setAddItemName(e.target.value)}
+                  placeholder="e.g. Bluetooth speaker"
+                  className="w-full rounded-md border border-border bg-input px-3 py-2 text-sm text-foreground outline-none focus:border-[var(--gold)]"
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs uppercase tracking-[0.2em] text-muted-foreground">Category</label>
+                <div className="flex flex-wrap gap-2">
+                  {(["Bar", "Beach", "Kitchen", "Home", "Other"] as const).map((cat) => (
+                    <button
+                      key={cat}
+                      onClick={() => setAddItemCategory(cat)}
+                      className={`rounded-full border px-3 py-1 text-sm transition ${addItemCategory === cat ? "border-[var(--gold)] bg-[var(--gold)]/20 text-[var(--gold)]" : "border-border text-muted-foreground hover:border-[var(--gold)]/50"}`}
+                    >
+                      {cat}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="mb-1 block text-xs uppercase tracking-[0.2em] text-muted-foreground"># bringing</label>
+                <input
+                  type="number"
+                  min={1}
+                  value={addItemQty}
+                  onChange={(e) => setAddItemQty(Math.max(1, parseInt(e.target.value) || 1))}
+                  className="w-24 rounded-md border border-border bg-input px-3 py-2 text-sm text-foreground outline-none focus:border-[var(--gold)]"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs uppercase tracking-[0.2em] text-muted-foreground">Note (optional)</label>
+                <input
+                  value={addItemNote}
+                  onChange={(e) => setAddItemNote(e.target.value)}
+                  placeholder="Any details…"
+                  className="w-full rounded-md border border-border bg-input px-3 py-2 text-sm text-foreground outline-none focus:border-[var(--gold)]"
+                />
+              </div>
+            </div>
+            <div className="mt-6 flex gap-3">
+              <button
+                onClick={submitAddItem}
+                disabled={!addItemName.trim()}
+                className="flex-1 rounded-md bg-[var(--gold)] py-2 text-sm font-medium text-[var(--olive-deep)] transition hover:brightness-110 disabled:opacity-40"
+              >
+                Add &amp; sign up
+              </button>
+              <button
+                onClick={() => { setShowAddItem(false); setAddItemName(""); setAddItemNote(""); }}
+                className="rounded-md border border-border px-4 py-2 text-sm text-muted-foreground hover:text-foreground"
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -730,6 +854,16 @@ export default function BachelorettePage() {
                 </ul>
               </section>
             ))}
+
+            <button
+              onClick={() => {
+                if (!user) { setShowNamePicker(true); return; }
+                setShowAddItem(true);
+              }}
+              className="w-full rounded-lg border border-dashed border-[var(--gold)]/40 px-4 py-3 text-xs uppercase tracking-wider text-[var(--gold)] hover:bg-[var(--gold)]/5"
+            >
+              + Bring something else
+            </button>
 
             {adminMode && (
               <button
