@@ -712,7 +712,7 @@ export default function BachelorettePage() {
               <MartiniGlass className="h-20 w-20 sm:h-24 sm:w-24" />
             </div>
             <p className="text-xs uppercase tracking-[0.3em] text-[var(--gold-soft)]">
-              Dewey Beach · July 2025 · Three Nights
+              Dewey Beach · July 2025
             </p>
             <h1 className="font-display mt-5 text-5xl leading-tight text-foreground sm:text-7xl">
               Nicole's <em className="text-[var(--gold)]">Bachelorette</em>
@@ -776,12 +776,14 @@ export default function BachelorettePage() {
             itinerary={itinerary}
             setItinerary={adminMode ? setItineraryA : undefined}
             sections={sections}
+            onGoToVibes={() => setTab("vibes")}
           />
         )}
         {tab === "itinerary" && (
           <ItineraryTab
             itinerary={itinerary}
             setItinerary={adminMode ? setItineraryA : undefined}
+            onGoToVibes={() => setTab("vibes")}
           />
         )}
         {tab === "signup" && (
@@ -1367,6 +1369,7 @@ function DetailsTab({
   itinerary,
   setItinerary,
   sections,
+  onGoToVibes,
 }: {
   claims: Record<string, Claim[]>;
   paid: PaidMap;
@@ -1379,6 +1382,7 @@ function DetailsTab({
   itinerary: ItinDay[];
   setItinerary?: (it: ItinDay[]) => void;
   sections: Section[];
+  onGoToVibes?: () => void;
 }) {
   const [selectedGirl, setSelectedGirl] = useState<Name | null>(null);
   const lockedToUser = user !== "" && user !== ADMIN;
@@ -1517,12 +1521,21 @@ function DetailsTab({
                   {day.label} · {day.date}
                 </p>
                 <ul className="mt-2 space-y-1.5">
-                  {day.blocks.map((b, i) => (
-                    <li key={i} className="flex gap-3 text-sm">
-                      <span className="w-16 shrink-0 tabular-nums text-muted-foreground">{b.time}</span>
-                      <span className="text-foreground">{b.what}</span>
-                    </li>
-                  ))}
+                  {day.blocks.map((b, i) => {
+                    const hasTheme = /theme/i.test(b.what);
+                    return (
+                      <li key={i} className="flex gap-3 text-sm">
+                        <span className="w-16 shrink-0 tabular-nums text-muted-foreground">{b.time}</span>
+                        {hasTheme && onGoToVibes ? (
+                          <button onClick={onGoToVibes} className="text-left text-foreground underline decoration-dotted underline-offset-2 hover:opacity-70">
+                            {b.what}
+                          </button>
+                        ) : (
+                          <span className="text-foreground">{b.what}</span>
+                        )}
+                      </li>
+                    );
+                  })}
                 </ul>
               </div>
             ))}
@@ -1695,9 +1708,11 @@ function DetailsTab({
 function ItineraryTab({
   itinerary,
   setItinerary,
+  onGoToVibes,
 }: {
   itinerary: ItinDay[];
   setItinerary?: (it: ItinDay[]) => void;
+  onGoToVibes?: () => void;
 }) {
   const adminMode = !!setItinerary;
   const dragBlock = useRef<{ dIdx: number; bIdx: number } | null>(null);
@@ -1810,7 +1825,13 @@ function ItineraryTab({
                 ) : (
                   <>
                     <span className="w-20 shrink-0 text-sm tabular-nums text-[var(--gold-soft)]">{b.time}</span>
-                    <span className="text-sm text-foreground">{b.what}</span>
+                    {/theme/i.test(b.what) && onGoToVibes ? (
+                      <button onClick={onGoToVibes} className="text-left text-sm text-foreground underline decoration-dotted underline-offset-2 hover:opacity-70">
+                        {b.what}
+                      </button>
+                    ) : (
+                      <span className="text-sm text-foreground">{b.what}</span>
+                    )}
                   </>
                 )}
               </li>
