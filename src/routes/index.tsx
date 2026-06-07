@@ -1148,7 +1148,7 @@ function ItemRow({
               {userOnIt && (
                 <button
                   onClick={onUnclaim}
-                  className="rounded-md border border-border px-2.5 py-1.5 text-xs uppercase tracking-wider text-muted-foreground transition hover:border-[var(--gold)] hover:text-[var(--gold)]"
+                  className="rounded-md border border-border bg-[#fef9dd] px-2.5 py-1.5 text-xs uppercase tracking-wider text-foreground transition hover:border-[var(--gold)] hover:text-[var(--gold)]"
                   aria-label="Remove one"
                 >
                   −
@@ -1177,7 +1177,7 @@ function ItemRow({
                 <button
                   type="button"
                   onClick={() => setFormAmount(Math.max(1, formAmount - 1))}
-                  className="rounded-md border border-border px-2.5 py-1.5 text-sm text-muted-foreground hover:border-[var(--gold)] hover:text-[var(--gold)]"
+                  className="rounded-md border border-border bg-[#fef9dd] px-2.5 py-1.5 text-sm text-foreground hover:border-[var(--gold)] hover:text-[var(--gold)]"
                   aria-label="Decrease"
                 >
                   −
@@ -1199,7 +1199,7 @@ function ItemRow({
                         : formAmount + 1,
                     )
                   }
-                  className="rounded-md border border-border px-2.5 py-1.5 text-sm text-muted-foreground hover:border-[var(--gold)] hover:text-[var(--gold)]"
+                  className="rounded-md border border-border bg-[#fef9dd] px-2.5 py-1.5 text-sm text-foreground hover:border-[var(--gold)] hover:text-[var(--gold)]"
                   aria-label="Increase"
                 >
                   +
@@ -1436,7 +1436,7 @@ function DetailsTab({
         {!lockedToUser && (
           <button
             onClick={() => setSelectedGirl(null)}
-            className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-xs uppercase tracking-wider text-muted-foreground transition hover:border-[var(--gold)] hover:text-[var(--gold)]"
+            className="inline-flex items-center gap-1.5 rounded-md border border-border bg-[#fef9dd] px-3 py-2 text-xs uppercase tracking-wider text-foreground transition hover:border-[var(--gold)] hover:text-[var(--gold)]"
           >
             ← Back to details
           </button>
