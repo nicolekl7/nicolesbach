@@ -132,13 +132,13 @@
   }
 
   html, body {
-    background-color: #fef9dd;
+    background-color: #96c587;
     background-image: repeating-linear-gradient(
       to right,
-      #96c587 0px,
-      #96c587 6px,
-      #fef9dd 6px,
-      #fef9dd 12px
+      rgba(150, 197, 135, 0.2) 0px,
+      rgba(150, 197, 135, 0.2) 6px,
+      rgba(254, 249, 221, 0.2) 6px,
+      rgba(254, 249, 221, 0.2) 12px
     );
     background-attachment: fixed;
     color: var(--color-foreground);
