@@ -245,7 +245,7 @@ type Expense = {
   perPerson: number;
   splitAmong: Name[];
   note?: string;
-  requested?: boolean;
+  dueDate?: string; // ISO date string YYYY-MM-DD
 };
 
 const INITIAL_EXPENSES: Expense[] = [
@@ -385,18 +385,7 @@ export default function BachelorettePage() {
     }).catch((err) => console.error("Auto-save paid failed:", err));
   };
 
-  const toggleRequested = (label: string) => {
-    const nextExpenses = expenses.map((e) =>
-      e.label === label ? { ...e, requested: e.requested === false ? true : false } : e
-    );
-    setExpenses(nextExpenses);
-    saveContent({
-      data: {
-        password: "nyler",
-        content: { themes, sections, itinerary, cars, houseInfo, claims, paid, expenses: nextExpenses },
-      },
-    }).catch((err) => console.error("Auto-save requested failed:", err));
-  };
+
 
   const setThemesA = (v: Theme[]) => setThemes(v);
   const setSectionsA = (v: Section[]) => setSections(v);
@@ -928,7 +917,6 @@ export default function BachelorettePage() {
             expenses={expenses}
             setExpenses={setExpenses}
             onToggle={togglePaid}
-            onToggleRequested={toggleRequested}
           />
         )}
       </main>
@@ -1487,23 +1475,16 @@ function DetailsTab({
             <ul className="mt-3 space-y-2">
               {userExpenses.map((e) => {
                 const hasPaid = !!paid[sg]?.[e.label];
-                const isRequested = e.requested !== false;
+                const due = isDue(e.dueDate);
                 return (
                   <li key={e.label} className="flex items-center justify-between text-sm">
                     <span className="text-foreground">{e.label}</span>
-                    {!isRequested ? (
+                    {!due ? (
                       <span className="rounded-full border border-amber-700/40 bg-amber-900/20 px-3 py-1 text-xs font-medium uppercase tracking-wider text-amber-400">
-                        Not requested yet
+                        {e.dueDate ? `Due ${formatDue(e.dueDate)}` : "Not due yet"}
                       </span>
                     ) : (
-                      <span
-                        className={
-                          "rounded-full border px-3 py-1 text-xs font-medium uppercase tracking-wider " +
-                          (hasPaid
-                            ? "border-green-700/40 bg-green-900/20 text-green-400"
-                            : "border-border bg-background/30 text-muted-foreground")
-                        }
-                      >
+                      <span className={"rounded-full border px-3 py-1 text-xs font-medium uppercase tracking-wider " + (hasPaid ? "border-green-700/40 bg-green-900/20 text-green-400" : "border-border bg-background/30 text-muted-foreground")}>
                         {hasPaid ? "Paid" : "Not paid"}
                       </span>
                     )}
@@ -1861,6 +1842,15 @@ function ItineraryTab({
 
 // ---------- Spend / Payments ----------
 
+function isDue(dueDate?: string) {
+  if (!dueDate) return true; // no date set = always due
+  return new Date(dueDate + "T00:00:00") <= new Date();
+}
+
+function formatDue(dueDate: string) {
+  return new Date(dueDate + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
 function ExpenseForm({
   initial,
   onSave,
@@ -1877,6 +1867,7 @@ function ExpenseForm({
   const [payer, setPayer] = useState<Name>(initial.payer as Name);
   const [split, setSplit] = useState<Name[]>(initial.splitAmong);
   const [note, setNote] = useState(initial.note ?? "");
+  const [dueDate, setDueDate] = useState(initial.dueDate ?? "");
 
   const perPerson = split.length > 0 ? Math.round((total / split.length) * 100) / 100 : 0;
 
@@ -1885,7 +1876,16 @@ function ExpenseForm({
       toast.error("Need a label, total > 0, and at least one person");
       return;
     }
-    onSave({ ...initial, label: label.trim(), total, payer, perPerson, splitAmong: split, note: note.trim() || undefined });
+    onSave({
+      ...initial,
+      label: label.trim(),
+      total,
+      payer,
+      perPerson,
+      splitAmong: split,
+      note: note.trim() || undefined,
+      dueDate: dueDate || undefined,
+    });
   };
 
   const inputCls = "w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-[var(--gold)]";
@@ -1908,7 +1908,11 @@ function ExpenseForm({
           </select>
         </div>
         <div>
-          <label className="mb-1 block text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Per person</label>
+          <label className="mb-1 block text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Due date (optional)</label>
+          <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className={inputCls} />
+        </div>
+        <div className="sm:col-span-2">
+          <label className="mb-1 block text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Per person (auto)</label>
           <div className="rounded-md border border-border bg-background/40 px-3 py-2 text-sm text-[var(--gold-soft)]">
             ${split.length > 0 ? perPerson.toFixed(2) : "—"}
           </div>
@@ -1952,14 +1956,12 @@ function SpendTab({
   onToggle,
   expenses,
   setExpenses,
-  onToggleRequested,
 }: {
   paid: PaidMap;
   user: Name | "";
   onToggle: (name: Name, label: string) => void;
   expenses: Expense[];
   setExpenses: (e: Expense[]) => void;
-  onToggleRequested: (label: string) => void;
 }) {
   const isAdmin = user === ADMIN;
   const visibleNames = user && !isAdmin ? [user as Name] : NAMES;
@@ -1967,15 +1969,9 @@ function SpendTab({
   const [adding, setAdding] = useState(false);
   const [editingLabel, setEditingLabel] = useState<string | null>(null);
 
-  const totalRequired = NAMES.reduce(
-    (sum, n) => sum + expenses.filter((e) => e.requested !== false && e.splitAmong.includes(n)).length,
-    0,
-  );
-  const totalPaid = NAMES.reduce(
-    (sum, n) =>
-      sum + expenses.filter((e) => e.requested !== false && e.splitAmong.includes(n) && paid[n]?.[e.label]).length,
-    0,
-  );
+  const dueExpenses = expenses.filter((e) => isDue(e.dueDate));
+  const totalRequired = NAMES.reduce((sum, n) => sum + dueExpenses.filter((e) => e.splitAmong.includes(n)).length, 0);
+  const totalPaid = NAMES.reduce((sum, n) => sum + dueExpenses.filter((e) => e.splitAmong.includes(n) && paid[n]?.[e.label]).length, 0);
 
   const removeExpense = (label: string) => {
     if (!confirm(`Delete "${label}"?`)) return;
@@ -2015,7 +2011,7 @@ function SpendTab({
           </div>
         </div>
         <p className="mt-1 text-xs uppercase tracking-[0.2em] text-[var(--gold-soft)]">
-          {totalPaid} of {totalRequired} paid
+          {totalPaid} of {totalRequired} due payments collected
           <span className="ml-2 normal-case tracking-normal text-[var(--gold)]">· tap any to toggle</span>
         </p>
 
@@ -2025,75 +2021,72 @@ function SpendTab({
               <thead>
                 <tr>
                   <th className="border-b border-border px-2 py-2 text-left text-[11px] uppercase tracking-wider text-muted-foreground">Name</th>
-                  {expenses.map((e) => (
-                    <th key={e.label} className="border-b border-border px-2 py-2 text-center text-[11px] uppercase tracking-wider text-[var(--gold-soft)]">
-                      <div>{e.label}</div>
-                      <div className="normal-case tracking-normal text-muted-foreground">${e.perPerson}</div>
-                      {e.requested === false && (
-                        <div className="mt-0.5 text-[10px] normal-case tracking-normal text-amber-400">not requested yet</div>
-                      )}
-                    </th>
-                  ))}
+                  {expenses.map((e) => {
+                    const due = isDue(e.dueDate);
+                    return (
+                      <th key={e.label} className="border-b border-border px-2 py-2 text-center text-[11px] uppercase tracking-wider text-[var(--gold-soft)]">
+                        <div>{e.label}</div>
+                        <div className="normal-case tracking-normal text-muted-foreground">${e.perPerson}</div>
+                        {!due && e.dueDate && (
+                          <div className="mt-0.5 text-[10px] normal-case tracking-normal text-amber-400">due {formatDue(e.dueDate)}</div>
+                        )}
+                      </th>
+                    );
+                  })}
                 </tr>
               </thead>
               <tbody>
-                {visibleNames.map((n) => {
-                  const isMe = n === user;
-                  return (
-                    <tr key={n}>
-                      <td className="border-b border-border px-2 py-2 text-foreground">
-                        {n} {isMe && <span className="text-[var(--gold)]">(you)</span>}
-                      </td>
-                      {expenses.map((e) => {
-                        const inSplit = e.splitAmong.includes(n);
-                        const hasPaid = !!paid[n]?.[e.label];
-                        const isRequested = e.requested !== false;
-                        if (!inSplit) return (
-                          <td key={e.label} className="border-b border-border px-2 py-2 text-center text-muted-foreground/40">—</td>
-                        );
-                        if (!isRequested) return (
-                          <td key={e.label} className="border-b border-border px-2 py-2 text-center">
-                            <span className="rounded-full border border-amber-700/40 bg-amber-900/20 px-2 py-0.5 text-[10px] text-amber-400">soon</span>
-                          </td>
-                        );
-                        return (
-                          <td key={e.label} className="border-b border-border px-2 py-2 text-center">
-                            <button onClick={() => onToggle(n, e.label)}
-                              className={`inline-flex h-6 w-6 cursor-pointer items-center justify-center rounded border text-xs transition hover:border-[var(--gold)] ${hasPaid ? "border-green-700/50 bg-green-900/30 text-green-400" : "border-border bg-background/30 text-muted-foreground"}`}
-                              aria-label={hasPaid ? "Paid" : "Not paid"}
-                            >{hasPaid ? "✓" : ""}</button>
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  );
-                })}
+                {visibleNames.map((n) => (
+                  <tr key={n}>
+                    <td className="border-b border-border px-2 py-2 text-foreground">
+                      {n} {n === user && <span className="text-[var(--gold)]">(you)</span>}
+                    </td>
+                    {expenses.map((e) => {
+                      const inSplit = e.splitAmong.includes(n);
+                      const hasPaid = !!paid[n]?.[e.label];
+                      const due = isDue(e.dueDate);
+                      if (!inSplit) return <td key={e.label} className="border-b border-border px-2 py-2 text-center text-muted-foreground/40">—</td>;
+                      if (!due) return (
+                        <td key={e.label} className="border-b border-border px-2 py-2 text-center">
+                          <span className="text-[10px] text-amber-400/70">soon</span>
+                        </td>
+                      );
+                      return (
+                        <td key={e.label} className="border-b border-border px-2 py-2 text-center">
+                          <button onClick={() => onToggle(n, e.label)}
+                            className={`inline-flex h-6 w-6 cursor-pointer items-center justify-center rounded border text-xs transition hover:border-[var(--gold)] ${hasPaid ? "border-green-700/50 bg-green-900/30 text-green-400" : "border-border bg-background/30 text-muted-foreground"}`}
+                            aria-label={hasPaid ? "Paid" : "Not paid"}
+                          >{hasPaid ? "✓" : ""}</button>
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
         ) : (
           <ul className="mt-5 space-y-5">
             {visibleNames.map((n) => {
-              const isMe = n === user;
               const userExpenses = expenses.filter((e) => e.splitAmong.includes(n));
               return (
                 <li key={n} className="border-b border-border pb-4 last:border-0">
                   <span className="text-sm font-medium text-foreground">
-                    {n} {isMe && <span className="text-[var(--gold)]">(you)</span>}
+                    {n} {n === user && <span className="text-[var(--gold)]">(you)</span>}
                   </span>
                   <ul className="mt-2 space-y-1.5">
                     {userExpenses.map((e) => {
                       const hasPaid = !!paid[n]?.[e.label];
-                      const isRequested = e.requested !== false;
+                      const due = isDue(e.dueDate);
                       return (
                         <li key={e.label} className="flex items-center justify-between text-sm">
                           <span className="text-muted-foreground">
                             {e.label}
                             <span className="ml-2 text-xs tabular-nums text-[var(--gold-soft)]">${e.perPerson}</span>
                           </span>
-                          {!isRequested ? (
+                          {!due ? (
                             <span className="rounded-full border border-amber-700/40 bg-amber-900/20 px-3 py-1 text-xs font-medium uppercase tracking-wider text-amber-400">
-                              Not requested yet
+                              {e.dueDate ? `Due ${formatDue(e.dueDate)}` : "Not due yet"}
                             </span>
                           ) : (
                             <button onClick={() => onToggle(n, e.label)}
@@ -2121,7 +2114,7 @@ function SpendTab({
             {!adding && (
               <button onClick={() => setAdding(true)}
                 className="rounded-md bg-[var(--gold)] px-3 py-1.5 text-xs uppercase tracking-wider text-[var(--olive-deep)]"
-              >+ Add expense</button>
+              >+ Add</button>
             )}
           </div>
 
@@ -2138,7 +2131,7 @@ function SpendTab({
 
           <ul className="mt-4 divide-y divide-border">
             {expenses.map((e) => {
-              const isRequested = e.requested !== false;
+              const due = isDue(e.dueDate);
               if (editingLabel === e.label) {
                 return (
                   <li key={e.label} className="py-3">
@@ -2150,17 +2143,14 @@ function SpendTab({
                 <li key={e.label} className="py-3">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
+                      <div className="flex flex-wrap items-center gap-2">
                         <span className="text-sm text-foreground">{e.label}</span>
-                        <button
-                          onClick={() => onToggleRequested(e.label)}
-                          className={`rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-wider transition ${isRequested ? "border-[var(--gold)]/40 text-[var(--gold-soft)] hover:border-amber-600/60 hover:text-amber-400" : "border-amber-700/40 bg-amber-900/20 text-amber-400 hover:bg-amber-900/30"}`}
-                        >
-                          {isRequested ? "Requested ✓" : "Not requested yet"}
-                        </button>
+                        <span className={`rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-wider ${due ? "border-[var(--gold)]/30 text-[var(--gold-soft)]" : "border-amber-700/40 bg-amber-900/20 text-amber-400"}`}>
+                          {due ? "Due now" : e.dueDate ? `Due ${formatDue(e.dueDate)}` : "No due date"}
+                        </span>
                       </div>
                       <p className="mt-0.5 text-xs text-muted-foreground">
-                        ${e.total} total · ${e.perPerson}/person · {e.splitAmong.length} people · paid by {e.payer}
+                        ${e.total} · ${e.perPerson}/person · {e.splitAmong.length} people · paid by {e.payer}
                         {e.note && <span className="ml-1 italic">· {e.note}</span>}
                       </p>
                     </div>
