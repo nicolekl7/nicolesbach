@@ -245,7 +245,7 @@ type Expense = {
   perPerson: number;
   splitAmong: Name[];
   note?: string;
-  dueDate?: string; // ISO date string YYYY-MM-DD
+  dueDate?: string; // YYYY-MM-DD
 };
 
 const INITIAL_EXPENSES: Expense[] = [
@@ -341,7 +341,6 @@ export default function BachelorettePage() {
       if (data.houseInfo) setHouseInfo(data.houseInfo as typeof DEFAULT_HOUSE);
       if (data.claims) setClaims(data.claims as Record<string, Claim[]>);
       if (data.paid) setPaid(data.paid as PaidMap);
-      if (data.expenses) setExpenses(data.expenses as Expense[]);
     }).catch(() => {});
   }, []);
 
@@ -353,7 +352,7 @@ export default function BachelorettePage() {
       await saveContent({
         data: {
           password: "nyler",
-          content: { themes, sections, itinerary, cars, houseInfo, claims, paid, expenses },
+          content: { themes, sections, itinerary, cars, houseInfo, claims, paid },
         },
       });
       toast.success("Saved!");
@@ -380,19 +379,9 @@ export default function BachelorettePage() {
     saveContent({
       data: {
         password: "nyler",
-        content: { themes, sections, itinerary, cars, houseInfo, claims, paid: nextPaid, expenses },
+        content: { themes, sections, itinerary, cars, houseInfo, claims, paid: nextPaid },
       },
     }).catch((err) => console.error("Auto-save paid failed:", err));
-  };
-
-  const saveExpenses = (nextExpenses: Expense[]) => {
-    setExpenses(nextExpenses);
-    saveContent({
-      data: {
-        password: "nyler",
-        content: { themes, sections, itinerary, cars, houseInfo, claims, paid, expenses: nextExpenses },
-      },
-    }).catch((err) => console.error("Auto-save expenses failed:", err));
   };
 
   const setThemesA = (v: Theme[]) => setThemes(v);
@@ -923,7 +912,7 @@ export default function BachelorettePage() {
             paid={paid}
             user={user}
             expenses={expenses}
-            setExpenses={saveExpenses}
+            setExpenses={setExpenses}
             onToggle={togglePaid}
           />
         )}
@@ -1483,16 +1472,25 @@ function DetailsTab({
             <ul className="mt-3 space-y-2">
               {userExpenses.map((e) => {
                 const hasPaid = !!paid[sg]?.[e.label];
-                const due = isDue(e.dueDate);
+                const notDueYet = e.dueDate
+                  ? new Date(e.dueDate + "T00:00:00") > (() => { const t = new Date(); t.setHours(0,0,0,0); return t; })()
+                  : false;
                 return (
                   <li key={e.label} className="flex items-center justify-between text-sm">
                     <span className="text-foreground">{e.label}</span>
-                    {!due ? (
+                    {notDueYet ? (
                       <span className="rounded-full border border-amber-700/40 bg-amber-900/20 px-3 py-1 text-xs font-medium uppercase tracking-wider text-amber-400">
-                        {e.dueDate ? `Due ${formatDue(e.dueDate)}` : "Not due yet"}
+                        Due {new Date(e.dueDate! + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                       </span>
                     ) : (
-                      <span className={"rounded-full border px-3 py-1 text-xs font-medium uppercase tracking-wider " + (hasPaid ? "border-green-700/40 bg-green-900/20 text-green-400" : "border-border bg-background/30 text-muted-foreground")}>
+                      <span
+                        className={
+                          "rounded-full border px-3 py-1 text-xs font-medium uppercase tracking-wider " +
+                          (hasPaid
+                            ? "border-green-700/40 bg-green-900/20 text-green-400"
+                            : "border-border bg-background/30 text-muted-foreground")
+                        }
+                      >
                         {hasPaid ? "Paid" : "Not paid"}
                       </span>
                     )}
@@ -1850,114 +1848,6 @@ function ItineraryTab({
 
 // ---------- Spend / Payments ----------
 
-function isDue(dueDate?: string) {
-  if (!dueDate) return true; // no date set = always due
-  return new Date(dueDate + "T00:00:00") <= new Date();
-}
-
-function formatDue(dueDate: string) {
-  return new Date(dueDate + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" });
-}
-
-function ExpenseForm({
-  initial,
-  onSave,
-  onCancel,
-  isNew,
-}: {
-  initial: Expense;
-  onSave: (e: Expense) => void;
-  onCancel: () => void;
-  isNew?: boolean;
-}) {
-  const [label, setLabel] = useState(initial.label);
-  const [total, setTotal] = useState(initial.total);
-  const [payer, setPayer] = useState<Name>(initial.payer as Name);
-  const [split, setSplit] = useState<Name[]>(initial.splitAmong);
-  const [note, setNote] = useState(initial.note ?? "");
-  const [dueDate, setDueDate] = useState(initial.dueDate ?? "");
-
-  const perPerson = split.length > 0 ? Math.round((total / split.length) * 100) / 100 : 0;
-
-  const save = () => {
-    if (!label.trim() || split.length === 0 || total <= 0) {
-      toast.error("Need a label, total > 0, and at least one person");
-      return;
-    }
-    onSave({
-      ...initial,
-      label: label.trim(),
-      total,
-      payer,
-      perPerson,
-      splitAmong: split,
-      note: note.trim() || undefined,
-      dueDate: dueDate || undefined,
-    });
-  };
-
-  const inputCls = "w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-[var(--gold)]";
-
-  return (
-    <div className="space-y-3 rounded-md border border-[var(--gold)]/30 bg-background/60 p-4">
-      <div className="grid gap-3 sm:grid-cols-2">
-        <div>
-          <label className="mb-1 block text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Label</label>
-          <input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="e.g. Brunch" className={inputCls} />
-        </div>
-        <div>
-          <label className="mb-1 block text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Total ($)</label>
-          <input type="number" min={0} value={total || ""} onChange={(e) => setTotal(parseFloat(e.target.value) || 0)} className={inputCls} />
-        </div>
-        <div>
-          <label className="mb-1 block text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Paid by</label>
-          <select value={payer} onChange={(e) => setPayer(e.target.value as Name)} className={inputCls}>
-            {NAMES.map((n) => <option key={n} value={n}>{n}</option>)}
-          </select>
-        </div>
-        <div>
-          <label className="mb-1 block text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Due date (optional)</label>
-          <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className={inputCls} />
-        </div>
-        <div className="sm:col-span-2">
-          <label className="mb-1 block text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Per person (auto)</label>
-          <div className="rounded-md border border-border bg-background/40 px-3 py-2 text-sm text-[var(--gold-soft)]">
-            ${split.length > 0 ? perPerson.toFixed(2) : "—"}
-          </div>
-        </div>
-      </div>
-      <div>
-        <label className="mb-1 block text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Note (optional)</label>
-        <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="e.g. Split 10 ways" className={inputCls} />
-      </div>
-      <div>
-        <label className="mb-1 block text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-          Split among ({split.length})
-        </label>
-        <div className="flex flex-wrap gap-1.5">
-          {NAMES.map((n) => {
-            const on = split.includes(n);
-            return (
-              <button key={n} type="button"
-                onClick={() => setSplit(on ? split.filter((x) => x !== n) : [...split, n])}
-                className={`rounded-full border px-2.5 py-1 text-xs transition ${on ? "border-[var(--gold)] bg-[var(--gold)]/10 text-[var(--gold-soft)]" : "border-border bg-background/30 text-muted-foreground"}`}
-              >{n}</button>
-            );
-          })}
-        </div>
-      </div>
-      <div className="flex gap-2">
-        <button onClick={save} className="rounded-md bg-[var(--gold)] px-3 py-2 text-xs uppercase tracking-wider text-[var(--olive-deep)]">
-          {isNew ? "Add" : "Save"}
-        </button>
-        <button onClick={onCancel} className="rounded-md border border-border px-3 py-2 text-xs uppercase tracking-wider text-muted-foreground">
-          Cancel
-        </button>
-      </div>
-    </div>
-  );
-}
-
 function SpendTab({
   paid,
   user,
@@ -1975,52 +1865,100 @@ function SpendTab({
   const visibleNames = user && !isAdmin ? [user as Name] : NAMES;
   const [view, setView] = useState<"list" | "checklist">("checklist");
   const [adding, setAdding] = useState(false);
-  const [editingLabel, setEditingLabel] = useState<string | null>(null);
+  const [newLabel, setNewLabel] = useState("");
+  const [newTotal, setNewTotal] = useState(0);
+  const [newPayer, setNewPayer] = useState<Name>(ADMIN);
+  const [newSplit, setNewSplit] = useState<Name[]>([...NAMES]);
+  const [newDueDate, setNewDueDate] = useState("");
 
-  const dueExpenses = expenses.filter((e) => isDue(e.dueDate));
-  const totalRequired = NAMES.reduce((sum, n) => sum + dueExpenses.filter((e) => e.splitAmong.includes(n)).length, 0);
-  const totalPaid = NAMES.reduce((sum, n) => sum + dueExpenses.filter((e) => e.splitAmong.includes(n) && paid[n]?.[e.label]).length, 0);
+  const checkIsNotDueYet = (dateStr?: string) => {
+    if (!dateStr) return false;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const due = new Date(dateStr + "T00:00:00");
+    return due > today;
+  };
+
+  const totalRequired = NAMES.reduce(
+    (sum, n) => sum + expenses.filter((e) => e.splitAmong.includes(n)).length,
+    0,
+  );
+  const totalPaid = NAMES.reduce(
+    (sum, n) =>
+      sum +
+      expenses.filter((e) => e.splitAmong.includes(n) && paid[n]?.[e.label]).length,
+    0,
+  );
+
+  const addExpense = () => {
+    const label = newLabel.trim();
+    if (!label || newSplit.length === 0 || newTotal <= 0) {
+      toast.error("Need a label, total > 0, and at least one person");
+      return;
+    }
+    if (expenses.some((e) => e.label === label)) {
+      toast.error("That label already exists");
+      return;
+    }
+    setExpenses([
+      ...expenses,
+      {
+        label,
+        total: newTotal,
+        payer: newPayer,
+        perPerson: Math.round((newTotal / newSplit.length) * 100) / 100,
+        splitAmong: newSplit,
+        ...(newDueDate ? { dueDate: newDueDate } : {}),
+      },
+    ]);
+    setAdding(false);
+    setNewLabel("");
+    setNewTotal(0);
+    setNewSplit([...NAMES]);
+    setNewDueDate("");
+    toast.success(`Added ${label}`);
+  };
 
   const removeExpense = (label: string) => {
     if (!confirm(`Delete "${label}"?`)) return;
     setExpenses(expenses.filter((e) => e.label !== label));
   };
 
-  const saveEdit = (updated: Expense) => {
-    setExpenses(expenses.map((e) => (e.label === editingLabel ? updated : e)));
-    setEditingLabel(null);
-  };
-
-  const saveNew = (e: Expense) => {
-    if (expenses.some((x) => x.label === e.label)) {
-      toast.error("That label already exists");
-      return;
-    }
-    setExpenses([...expenses, e]);
-    setAdding(false);
-    toast.success(`Added ${e.label}`);
-  };
-
   return (
     <div className="space-y-8">
-      {/* Payments checklist / list */}
       <section className="rounded-lg border border-border bg-card/40 p-6">
         <div className="flex flex-wrap items-baseline justify-between gap-3">
           <h2 className="font-display text-3xl text-foreground sm:text-4xl">
             <em className="text-[var(--gold)]">Payments</em>
           </h2>
           <div className="flex gap-1 rounded-md border border-border bg-background/30 p-1">
-            <button onClick={() => setView("checklist")}
-              className={`rounded px-2.5 py-1 text-[11px] uppercase tracking-wider transition ${view === "checklist" ? "bg-[var(--gold)] text-[var(--olive-deep)]" : "text-muted-foreground"}`}
-            >Checklist</button>
-            <button onClick={() => setView("list")}
-              className={`rounded px-2.5 py-1 text-[11px] uppercase tracking-wider transition ${view === "list" ? "bg-[var(--gold)] text-[var(--olive-deep)]" : "text-muted-foreground"}`}
-            >List</button>
+            <button
+              onClick={() => setView("checklist")}
+              className={`rounded px-2.5 py-1 text-[11px] uppercase tracking-wider transition ${
+                view === "checklist"
+                  ? "bg-[var(--gold)] text-[var(--olive-deep)]"
+                  : "text-muted-foreground"
+              }`}
+            >
+              Checklist
+            </button>
+            <button
+              onClick={() => setView("list")}
+              className={`rounded px-2.5 py-1 text-[11px] uppercase tracking-wider transition ${
+                view === "list"
+                  ? "bg-[var(--gold)] text-[var(--olive-deep)]"
+                  : "text-muted-foreground"
+              }`}
+            >
+              List
+            </button>
           </div>
         </div>
         <p className="mt-1 text-xs uppercase tracking-[0.2em] text-[var(--gold-soft)]">
-          {totalPaid} of {totalRequired} due payments collected
-          <span className="ml-2 normal-case tracking-normal text-[var(--gold)]">· tap any to toggle</span>
+          {totalPaid} of {totalRequired} paid
+          <span className="ml-2 normal-case tracking-normal text-[var(--gold)]">
+            · tap any to toggle
+          </span>
         </p>
 
         {view === "checklist" ? (
@@ -2028,78 +1966,115 @@ function SpendTab({
             <table className="w-full border-collapse text-sm">
               <thead>
                 <tr>
-                  <th className="border-b border-border px-2 py-2 text-left text-[11px] uppercase tracking-wider text-muted-foreground">Name</th>
-                  {expenses.map((e) => {
-                    const due = isDue(e.dueDate);
-                    return (
-                      <th key={e.label} className="border-b border-border px-2 py-2 text-center text-[11px] uppercase tracking-wider text-[var(--gold-soft)]">
-                        <div>{e.label}</div>
-                        <div className="normal-case tracking-normal text-muted-foreground">${e.perPerson}</div>
-                        {!due && e.dueDate && (
-                          <div className="mt-0.5 text-[10px] normal-case tracking-normal text-amber-400">due {formatDue(e.dueDate)}</div>
-                        )}
-                      </th>
-                    );
-                  })}
+                  <th className="border-b border-border px-2 py-2 text-left text-[11px] uppercase tracking-wider text-muted-foreground">
+                    Name
+                  </th>
+                  {expenses.map((e) => (
+                    <th
+                      key={e.label}
+                      className="border-b border-border px-2 py-2 text-center text-[11px] uppercase tracking-wider text-[var(--gold-soft)]"
+                    >
+                      <div>{e.label}</div>
+                      <div className="text-muted-foreground normal-case tracking-normal">
+                        ${e.perPerson}
+                      </div>
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
-                {visibleNames.map((n) => (
-                  <tr key={n}>
-                    <td className="border-b border-border px-2 py-2 text-foreground">
-                      {n} {n === user && <span className="text-[var(--gold)]">(you)</span>}
-                    </td>
-                    {expenses.map((e) => {
-                      const inSplit = e.splitAmong.includes(n);
-                      const hasPaid = !!paid[n]?.[e.label];
-                      const due = isDue(e.dueDate);
-                      if (!inSplit) return <td key={e.label} className="border-b border-border px-2 py-2 text-center text-muted-foreground/40">—</td>;
-                      if (!due) return (
-                        <td key={e.label} className="border-b border-border px-2 py-2 text-center">
-                          <span className="text-[10px] text-amber-400/70">soon</span>
-                        </td>
-                      );
-                      return (
-                        <td key={e.label} className="border-b border-border px-2 py-2 text-center">
-                          <button onClick={() => onToggle(n, e.label)}
-                            className={`inline-flex h-6 w-6 cursor-pointer items-center justify-center rounded border text-xs transition hover:border-[var(--gold)] ${hasPaid ? "border-green-700/50 bg-green-900/30 text-green-400" : "border-border bg-background/30 text-muted-foreground"}`}
-                            aria-label={hasPaid ? "Paid" : "Not paid"}
-                          >{hasPaid ? "✓" : ""}</button>
-                        </td>
-                      );
-                    })}
-                  </tr>
-                ))}
+                {visibleNames.map((n) => {
+                  const isMe = n === user;
+                  return (
+                    <tr key={n}>
+                      <td className="border-b border-border px-2 py-2 text-foreground">
+                        {n} {isMe && <span className="text-[var(--gold)]">(you)</span>}
+                      </td>
+                      {expenses.map((e) => {
+                        const inSplit = e.splitAmong.includes(n);
+                        const hasPaid = !!paid[n]?.[e.label];
+                        if (!inSplit) {
+                          return (
+                            <td
+                              key={e.label}
+                              className="border-b border-border px-2 py-2 text-center text-muted-foreground/40"
+                            >
+                              —
+                            </td>
+                          );
+                        }
+                        return (
+                          <td
+                            key={e.label}
+                            className="border-b border-border px-2 py-2 text-center"
+                          >
+                            {checkIsNotDueYet(e.dueDate) ? (
+                              <span className="text-[10px] text-amber-400">
+                                {new Date(e.dueDate! + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                              </span>
+                            ) : (
+                              <button
+                                onClick={() => onToggle(n, e.label)}
+                                className={`inline-flex h-6 w-6 cursor-pointer items-center justify-center rounded border text-xs transition hover:border-[var(--gold)] ${
+                                  hasPaid
+                                    ? "border-green-700/50 bg-green-900/30 text-green-400"
+                                    : "border-border bg-background/30 text-muted-foreground"
+                                }`}
+                                aria-label={hasPaid ? "Paid" : "Not paid"}
+                              >
+                                {hasPaid ? "✓" : ""}
+                              </button>
+                            )}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         ) : (
           <ul className="mt-5 space-y-5">
             {visibleNames.map((n) => {
+              const isMe = n === user;
               const userExpenses = expenses.filter((e) => e.splitAmong.includes(n));
               return (
                 <li key={n} className="border-b border-border pb-4 last:border-0">
-                  <span className="text-sm font-medium text-foreground">
-                    {n} {n === user && <span className="text-[var(--gold)]">(you)</span>}
-                  </span>
+                  <div className="flex items-baseline justify-between">
+                    <span className="text-sm font-medium text-foreground">
+                      {n} {isMe && <span className="text-[var(--gold)]">(you)</span>}
+                    </span>
+                  </div>
                   <ul className="mt-2 space-y-1.5">
                     {userExpenses.map((e) => {
                       const hasPaid = !!paid[n]?.[e.label];
-                      const due = isDue(e.dueDate);
                       return (
-                        <li key={e.label} className="flex items-center justify-between text-sm">
+                        <li
+                          key={e.label}
+                          className="flex items-center justify-between text-sm"
+                        >
                           <span className="text-muted-foreground">
                             {e.label}
-                            <span className="ml-2 text-xs tabular-nums text-[var(--gold-soft)]">${e.perPerson}</span>
+                            <span className="ml-2 text-xs tabular-nums text-[var(--gold-soft)]">
+                              ${e.perPerson}
+                            </span>
                           </span>
-                          {!due ? (
+                          {checkIsNotDueYet(e.dueDate) ? (
                             <span className="rounded-full border border-amber-700/40 bg-amber-900/20 px-3 py-1 text-xs font-medium uppercase tracking-wider text-amber-400">
-                              {e.dueDate ? `Due ${formatDue(e.dueDate)}` : "Not due yet"}
+                              Due {new Date(e.dueDate! + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                             </span>
                           ) : (
-                            <button onClick={() => onToggle(n, e.label)}
-                              className={`cursor-pointer rounded-full border px-3 py-1 text-xs font-medium uppercase tracking-wider transition hover:border-[var(--gold)] ${hasPaid ? "border-green-700/40 bg-green-900/20 text-green-400" : "border-border bg-background/30 text-muted-foreground"}`}
-                            >{hasPaid ? "Paid" : "Not paid"}</button>
+                            <button
+                              onClick={() => onToggle(n, e.label)}
+                              className={`cursor-pointer rounded-full border px-3 py-1 text-xs font-medium uppercase tracking-wider transition hover:border-[var(--gold)] ${
+                                hasPaid
+                                  ? "border-green-700/40 bg-green-900/20 text-green-400"
+                                  : "border-border bg-background/30 text-muted-foreground"
+                              }`}
+                            >
+                              {hasPaid ? "Paid" : "Not paid"}
+                            </button>
                           )}
                         </li>
                       );
@@ -2112,67 +2087,145 @@ function SpendTab({
         )}
       </section>
 
-      {/* Manage expenses (admin only) */}
-      {isAdmin && (
-        <section className="rounded-lg border border-border bg-card/40 p-6">
-          <div className="flex items-baseline justify-between">
-            <h3 className="font-display text-2xl text-foreground">
-              <em className="text-[var(--gold)]">Manage expenses</em>
-            </h3>
-            {!adding && (
-              <button onClick={() => setAdding(true)}
-                className="rounded-md bg-[var(--gold)] px-3 py-1.5 text-xs uppercase tracking-wider text-[var(--olive-deep)]"
-              >+ Add</button>
-            )}
-          </div>
-
-          {adding && (
-            <div className="mt-4">
-              <ExpenseForm
-                initial={{ label: "", total: 0, payer: ADMIN, perPerson: 0, splitAmong: [...NAMES] }}
-                onSave={saveNew}
-                onCancel={() => setAdding(false)}
-                isNew
-              />
-            </div>
+      <section className="rounded-lg border border-border bg-card/40 p-6">
+        <div className="flex items-baseline justify-between">
+          <h3 className="font-display text-2xl text-foreground">
+            <em className="text-[var(--gold)]">Manage expenses</em>
+          </h3>
+          {!adding && (
+            <button
+              onClick={() => setAdding(true)}
+              className="rounded-md bg-[var(--gold)] px-3 py-1.5 text-xs uppercase tracking-wider text-[var(--olive-deep)]"
+            >
+              + Add expense
+            </button>
           )}
+        </div>
 
-          <ul className="mt-4 divide-y divide-border">
-            {expenses.map((e) => {
-              const due = isDue(e.dueDate);
-              if (editingLabel === e.label) {
-                return (
-                  <li key={e.label} className="py-3">
-                    <ExpenseForm initial={e} onSave={saveEdit} onCancel={() => setEditingLabel(null)} />
-                  </li>
-                );
-              }
-              return (
-                <li key={e.label} className="py-3">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-sm text-foreground">{e.label}</span>
-                        <span className={`rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-wider ${due ? "border-[var(--gold)]/30 text-[var(--gold-soft)]" : "border-amber-700/40 bg-amber-900/20 text-amber-400"}`}>
-                          {due ? "Due now" : e.dueDate ? `Due ${formatDue(e.dueDate)}` : "No due date"}
-                        </span>
-                      </div>
-                      <p className="mt-0.5 text-xs text-muted-foreground">
-                        ${e.total} · ${e.perPerson}/person · {e.splitAmong.length} people · paid by {e.payer}
-                        {e.note && <span className="ml-1 italic">· {e.note}</span>}
-                      </p>
-                    </div>
-                    <div className="flex shrink-0 gap-3">
-                      <button onClick={() => setEditingLabel(e.label)} className="text-xs text-muted-foreground hover:text-[var(--gold)]">Edit</button>
-                      <button onClick={() => removeExpense(e.label)} className="text-xs text-muted-foreground hover:text-red-400">Delete</button>
-                    </div>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        </section>
-      )}
+        {adding && (
+          <div className="mt-4 space-y-3 rounded-md border border-[var(--gold)]/30 bg-background/60 p-4">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <label className="mb-1 block text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                  Label
+                </label>
+                <input
+                  value={newLabel}
+                  onChange={(e) => setNewLabel(e.target.value)}
+                  placeholder="e.g. Brunch"
+                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-[var(--gold)]"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                  Total ($)
+                </label>
+                <input
+                  type="number"
+                  min={0}
+                  value={newTotal || ""}
+                  onChange={(e) => setNewTotal(parseFloat(e.target.value) || 0)}
+                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-[var(--gold)]"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                  Paid by
+                </label>
+                <select
+                  value={newPayer}
+                  onChange={(e) => setNewPayer(e.target.value as Name)}
+                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-[var(--gold)]"
+                >
+                  {NAMES.map((n) => (
+                    <option key={n} value={n}>{n}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="mb-1 block text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                  Due date (optional)
+                </label>
+                <input
+                  type="date"
+                  value={newDueDate}
+                  onChange={(e) => setNewDueDate(e.target.value)}
+                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-[var(--gold)]"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                  Per person
+                </label>
+                <div className="rounded-md border border-border bg-background/40 px-3 py-2 text-sm text-[var(--gold-soft)]">
+                  ${newSplit.length > 0
+                    ? (Math.round((newTotal / newSplit.length) * 100) / 100).toFixed(2)
+                    : "—"}
+                </div>
+              </div>
+            </div>
+            <div>
+              <label className="mb-1 block text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                Split among ({newSplit.length})
+              </label>
+              <div className="flex flex-wrap gap-1.5">
+                {NAMES.map((n) => {
+                  const on = newSplit.includes(n);
+                  return (
+                    <button
+                      key={n}
+                      type="button"
+                      onClick={() =>
+                        setNewSplit(on ? newSplit.filter((x) => x !== n) : [...newSplit, n])
+                      }
+                      className={`rounded-full border px-2.5 py-1 text-xs transition ${
+                        on
+                          ? "border-[var(--gold)] bg-[var(--gold)]/10 text-[var(--gold-soft)]"
+                          : "border-border bg-background/30 text-muted-foreground"
+                      }`}
+                    >
+                      {n}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={addExpense}
+                className="rounded-md bg-[var(--gold)] px-3 py-2 text-xs uppercase tracking-wider text-[var(--olive-deep)]"
+              >
+                Save
+              </button>
+              <button
+                onClick={() => setAdding(false)}
+                className="rounded-md border border-border px-3 py-2 text-xs uppercase tracking-wider text-muted-foreground"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+
+        <ul className="mt-4 divide-y divide-border">
+          {expenses.map((e) => (
+            <li key={e.label} className="flex items-baseline justify-between gap-3 py-3 text-sm">
+              <div className="min-w-0">
+                <span className="text-foreground">{e.label}</span>
+                <span className="ml-2 text-xs text-muted-foreground">
+                  ${e.total} · ${e.perPerson}/person · {e.splitAmong.length} people · paid by {e.payer}
+                </span>
+              </div>
+              <button
+                onClick={() => removeExpense(e.label)}
+                className="shrink-0 text-xs text-muted-foreground hover:text-red-400"
+              >
+                Delete
+              </button>
+            </li>
+          ))}
+        </ul>
+      </section>
     </div>
   );
 }
