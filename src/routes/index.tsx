@@ -380,12 +380,20 @@ export default function BachelorettePage() {
     saveContent({
       data: {
         password: "nyler",
-        content: { themes, sections, itinerary, cars, houseInfo, claims, paid: nextPaid },
+        content: { themes, sections, itinerary, cars, houseInfo, claims, paid: nextPaid, expenses },
       },
     }).catch((err) => console.error("Auto-save paid failed:", err));
   };
 
-
+  const saveExpenses = (nextExpenses: Expense[]) => {
+    setExpenses(nextExpenses);
+    saveContent({
+      data: {
+        password: "nyler",
+        content: { themes, sections, itinerary, cars, houseInfo, claims, paid, expenses: nextExpenses },
+      },
+    }).catch((err) => console.error("Auto-save expenses failed:", err));
+  };
 
   const setThemesA = (v: Theme[]) => setThemes(v);
   const setSectionsA = (v: Section[]) => setSections(v);
@@ -915,7 +923,7 @@ export default function BachelorettePage() {
             paid={paid}
             user={user}
             expenses={expenses}
-            setExpenses={setExpenses}
+            setExpenses={saveExpenses}
             onToggle={togglePaid}
           />
         )}
