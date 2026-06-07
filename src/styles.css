@@ -136,9 +136,9 @@
     background-image: repeating-linear-gradient(
       to right,
       rgba(150, 197, 135, 0.2) 0px,
-      rgba(150, 197, 135, 0.2) 6px,
-      rgba(254, 249, 221, 0.2) 6px,
-      rgba(254, 249, 221, 0.2) 12px
+      rgba(150, 197, 135, 0.2) 12px,
+      rgba(254, 249, 221, 0.2) 12px,
+      rgba(254, 249, 221, 0.2) 24px
     );
     background-attachment: fixed;
     color: var(--color-foreground);
