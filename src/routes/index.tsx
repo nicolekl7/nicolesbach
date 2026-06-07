@@ -293,15 +293,12 @@ function MartiniGlass({ className = "" }: { className?: string }) {
 
 export default function BachelorettePage() {
   const [user, setUser] = useState<Name | "">(() => {
-    try {
-      const saved = localStorage.getItem("bach-user");
-      return (NAMES as readonly string[]).includes(saved ?? "") ? (saved as Name) : "";
-    } catch {
-      return "";
-    }
+    if (typeof localStorage === "undefined") return "";
+    const saved = localStorage.getItem("bach-user");
+    return (NAMES as readonly string[]).includes(saved ?? "") ? (saved as Name) : "";
   });
   const setUserPersisted = (name: Name | "") => {
-    try { localStorage.setItem("bach-user", name); } catch {}
+    if (typeof localStorage !== "undefined") localStorage.setItem("bach-user", name);
     setUser(name);
   };
   const [claims, setClaims] = useState<Record<string, Claim[]>>(INITIAL_CLAIMS);
