@@ -1480,7 +1480,7 @@ function DetailsTab({
                     <span className="text-foreground">{e.label}</span>
                     {notDueYet ? (
                       <span className="rounded-full border border-amber-700/40 bg-amber-900/20 px-3 py-1 text-xs font-medium uppercase tracking-wider text-amber-400">
-                        Due {new Date(e.dueDate! + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                        Not due yet
                       </span>
                     ) : (
                       <span
@@ -1869,6 +1869,8 @@ function SpendTab({
   const [newTotal, setNewTotal] = useState(0);
   const [newPayer, setNewPayer] = useState<Name>(ADMIN);
   const [newSplit, setNewSplit] = useState<Name[]>([...NAMES]);
+  const [editingLabel, setEditingLabel] = useState<string | null>(null);
+  const [editFields, setEditFields] = useState<Partial<Expense>>({});
   const [newDueDate, setNewDueDate] = useState("");
 
   const checkIsNotDueYet = (dateStr?: string) => {
@@ -2008,10 +2010,8 @@ function SpendTab({
                             key={e.label}
                             className="border-b border-border px-2 py-2 text-center"
                           >
-                            {checkIsNotDueYet(e.dueDate) ? (
-                              <span className="text-[10px] text-amber-400">
-                                {new Date(e.dueDate! + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                              </span>
+                            {checkIsNotDueYet(e.dueDate) && !isAdmin ? (
+                              <span className="text-[10px] text-amber-400">Not due yet</span>
                             ) : (
                               <button
                                 onClick={() => onToggle(n, e.label)}
@@ -2060,9 +2060,9 @@ function SpendTab({
                               ${e.perPerson}
                             </span>
                           </span>
-                          {checkIsNotDueYet(e.dueDate) ? (
+                          {checkIsNotDueYet(e.dueDate) && !isAdmin ? (
                             <span className="rounded-full border border-amber-700/40 bg-amber-900/20 px-3 py-1 text-xs font-medium uppercase tracking-wider text-amber-400">
-                              Due {new Date(e.dueDate! + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                              Not due yet
                             </span>
                           ) : (
                             <button
@@ -2208,22 +2208,91 @@ function SpendTab({
         )}
 
         <ul className="mt-4 divide-y divide-border">
-          {expenses.map((e) => (
-            <li key={e.label} className="flex items-baseline justify-between gap-3 py-3 text-sm">
-              <div className="min-w-0">
-                <span className="text-foreground">{e.label}</span>
-                <span className="ml-2 text-xs text-muted-foreground">
-                  ${e.total} · ${e.perPerson}/person · {e.splitAmong.length} people · paid by {e.payer}
-                </span>
-              </div>
-              <button
-                onClick={() => removeExpense(e.label)}
-                className="shrink-0 text-xs text-muted-foreground hover:text-red-400"
-              >
-                Delete
-              </button>
-            </li>
-          ))}
+          {expenses.map((e) => {
+            const isEditing = editingLabel === e.label;
+            const ef = editFields;
+            const editSplit = (ef.splitAmong ?? e.splitAmong) as Name[];
+            const editTotal = ef.total ?? e.total;
+            const editPerPerson = editSplit.length > 0
+              ? Math.round((editTotal / editSplit.length) * 100) / 100
+              : 0;
+            return (
+              <li key={e.label} className="py-3 text-sm">
+                {isEditing ? (
+                  <div className="space-y-3 rounded-md border border-[var(--gold)]/30 bg-background/60 p-3">
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      <div>
+                        <label className="mb-1 block text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Label</label>
+                        <input value={ef.label ?? e.label} onChange={(ev) => setEditFields({ ...ef, label: ev.target.value })}
+                          className="w-full rounded-md border border-border bg-background px-3 py-1.5 text-sm text-foreground outline-none focus:border-[var(--gold)]" />
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Total ($)</label>
+                        <input type="number" min={0} value={editTotal || ""} onChange={(ev) => setEditFields({ ...ef, total: parseFloat(ev.target.value) || 0 })}
+                          className="w-full rounded-md border border-border bg-background px-3 py-1.5 text-sm text-foreground outline-none focus:border-[var(--gold)]" />
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Paid by</label>
+                        <select value={ef.payer ?? e.payer} onChange={(ev) => setEditFields({ ...ef, payer: ev.target.value })}
+                          className="w-full rounded-md border border-border bg-background px-3 py-1.5 text-sm text-foreground outline-none focus:border-[var(--gold)]">
+                          {NAMES.map((n) => <option key={n} value={n}>{n}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Due date</label>
+                        <input type="date" value={ef.dueDate ?? e.dueDate ?? ""} onChange={(ev) => setEditFields({ ...ef, dueDate: ev.target.value || undefined })}
+                          className="w-full rounded-md border border-border bg-background px-3 py-1.5 text-sm text-foreground outline-none focus:border-[var(--gold)]" />
+                      </div>
+                      <div className="sm:col-span-2 text-xs text-muted-foreground">Per person: ${editPerPerson.toFixed(2)}</div>
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Split among ({editSplit.length})</label>
+                      <div className="flex flex-wrap gap-1.5">
+                        {NAMES.map((n) => {
+                          const on = editSplit.includes(n);
+                          return (
+                            <button key={n} type="button"
+                              onClick={() => setEditFields({ ...ef, splitAmong: on ? editSplit.filter((x) => x !== n) : [...editSplit, n] })}
+                              className={`rounded-full border px-2.5 py-1 text-xs transition ${on ? "border-[var(--gold)] bg-[var(--gold)]/10 text-[var(--gold-soft)]" : "border-border bg-background/30 text-muted-foreground"}`}
+                            >{n}</button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => {
+                          setExpenses(expenses.map((x) => x.label === e.label ? { ...e, ...ef, perPerson: editPerPerson } : x));
+                          setEditingLabel(null);
+                          setEditFields({});
+                        }}
+                        className="rounded-md bg-[var(--gold)] px-3 py-1.5 text-xs uppercase tracking-wider text-[var(--olive-deep)]"
+                      >Save</button>
+                      <button onClick={() => { setEditingLabel(null); setEditFields({}); }}
+                        className="rounded-md border border-border px-3 py-1.5 text-xs uppercase tracking-wider text-muted-foreground"
+                      >Cancel</button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-baseline justify-between gap-3">
+                    <div className="min-w-0">
+                      <span className="text-foreground">{e.label}</span>
+                      <span className="ml-2 text-xs text-muted-foreground">
+                        ${e.total} · ${e.perPerson}/person · {e.splitAmong.length} people · paid by {e.payer}
+                        {e.dueDate && <span className="ml-1">· due {new Date(e.dueDate + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>}
+                      </span>
+                    </div>
+                    <div className="flex shrink-0 gap-3">
+                      <button onClick={() => { setEditingLabel(e.label); setEditFields({}); }}
+                        className="text-xs text-muted-foreground hover:text-[var(--gold)]">Edit</button>
+                      <button onClick={() => removeExpense(e.label)}
+                        className="text-xs text-muted-foreground hover:text-red-400">Delete</button>
+                    </div>
+                  </div>
+                )}
+              </li>
+            );
+          })}
         </ul>
       </section>
     </div>
