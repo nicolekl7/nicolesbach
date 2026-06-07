@@ -136,9 +136,9 @@
     background-image: repeating-linear-gradient(
       to right,
       #96c587 0px,
-      #96c587 16px,
-      #fef9dd 16px,
-      #fef9dd 32px
+      #96c587 6px,
+      #fef9dd 6px,
+      #fef9dd 24px
     );
     background-attachment: fixed;
     color: var(--color-foreground);
