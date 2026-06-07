@@ -707,24 +707,26 @@ export default function BachelorettePage() {
       {/* Hero */}
       <header className="relative z-10 px-5 pt-12 pb-10 sm:pt-20 sm:pb-16">
         <div className="mx-auto max-w-3xl text-center">
-          <div className="mx-auto mb-6 flex justify-center text-[var(--gold)]">
-            <MartiniGlass className="h-20 w-20 sm:h-24 sm:w-24" />
+          <div className="mx-auto inline-block rounded-2xl bg-card px-10 py-8">
+            <div className="mx-auto mb-6 flex justify-center text-[var(--gold)]">
+              <MartiniGlass className="h-20 w-20 sm:h-24 sm:w-24" />
+            </div>
+            <p className="text-xs uppercase tracking-[0.3em] text-[var(--gold-soft)]">
+              Dewey Beach · July 2025 · Three Nights
+            </p>
+            <h1 className="font-display mt-5 text-5xl leading-tight text-foreground sm:text-7xl">
+              Nicole's <em className="text-[var(--gold)]">Bachelorette</em>
+            </h1>
           </div>
-          <p className="text-xs uppercase tracking-[0.3em] text-[var(--gold-soft)]">
-            Dewey Beach · July 2025 · Three Nights
-          </p>
-          <h1 className="font-display mt-5 text-5xl leading-tight text-foreground sm:text-7xl">
-            Nicole's <em className="text-[var(--gold)]">Bachelorette</em>
-          </h1>
           {/* Name selector */}
-          <div className="mx-auto mt-10 max-w-sm">
+          <div className="mx-auto mt-6 inline-block rounded-xl bg-card px-6 py-4">
             <label className="mb-2 block text-xs uppercase tracking-[0.25em] text-muted-foreground">
               I am…
             </label>
             <select
               value={user}
               onChange={(e) => setUserPersisted(e.target.value as Name | "")}
-              className="w-full rounded-md border border-border bg-card px-4 py-3 text-base text-foreground outline-none transition focus:border-[var(--gold)] focus:ring-1 focus:ring-[var(--gold)]"
+              className="w-full min-w-[200px] rounded-md border border-border bg-[#fef9dd] px-4 py-3 text-base text-foreground outline-none transition focus:border-[var(--gold)] focus:ring-1 focus:ring-[var(--gold)]"
             >
               <option value="">Select your name</option>
               {NAMES.map((n) => (
@@ -739,7 +741,7 @@ export default function BachelorettePage() {
 
       {/* Tabs */}
       <div className="relative z-10 mx-auto max-w-3xl px-5">
-        <div className="flex gap-1 overflow-x-auto rounded-lg border border-border bg-card/40 p-1">
+        <div className="flex gap-1 overflow-x-auto rounded-lg border border-border bg-card p-1">
           <TabBtn active={tab === "details"} onClick={() => setTab("details")}>
             Details
           </TabBtn>
@@ -785,7 +787,7 @@ export default function BachelorettePage() {
         {tab === "signup" && (
           <>
             {/* Progress */}
-            <div className="mb-10 rounded-lg border border-border bg-card/40 p-5">
+            <div className="mb-10 rounded-lg border border-border bg-card p-5">
               <div className="flex items-baseline justify-between">
                 <span className="font-display text-lg italic text-foreground">
                   {finiteWithSomeone} of {finiteItems.length} items claimed
@@ -838,7 +840,7 @@ export default function BachelorettePage() {
                     </button>
                   )}
                 </div>
-                <ul className="divide-y divide-border rounded-lg border border-border bg-card/40">
+                <ul className="divide-y divide-border rounded-lg border border-border bg-card">
                   {section.items.map((item, iIdx) => (
                     <ItemRow
                       key={item.id}
@@ -1268,7 +1270,7 @@ function WhoTab({
         return (
           <div
             key={name}
-            className={`rounded-lg border bg-card/40 p-5 transition ${
+            className={`rounded-lg border bg-card p-5 transition ${
               isMe
                 ? "border-[var(--gold)] shadow-[0_0_0_1px_var(--gold)]"
                 : "border-border"
@@ -1431,7 +1433,7 @@ function DetailsTab({
         </div>
 
         {car && (
-          <section className="rounded-lg border border-border bg-card/40 p-6">
+          <section className="rounded-lg border border-border bg-card p-6">
             <h3 className="font-display text-2xl text-foreground">
               <em className="text-[var(--gold)]">Your ride</em>
             </h3>
@@ -1443,7 +1445,7 @@ function DetailsTab({
           </section>
         )}
 
-        <section className="rounded-lg border border-border bg-card/40 p-6">
+        <section className="rounded-lg border border-border bg-card p-6">
           <h3 className="font-display text-2xl text-foreground">
             <em className="text-[var(--gold)]">You're bringing</em>
           </h3>
@@ -1465,7 +1467,7 @@ function DetailsTab({
         </section>
 
         {userExpenses.length > 0 && (
-          <section className="rounded-lg border border-border bg-card/40 p-6">
+          <section className="rounded-lg border border-border bg-card p-6">
             <h3 className="font-display text-2xl text-foreground">
               <em className="text-[var(--gold)]">Payment</em>
             </h3>
@@ -1504,7 +1506,7 @@ function DetailsTab({
           </section>
         )}
 
-        <section className="rounded-lg border border-border bg-card/40 p-6">
+        <section className="rounded-lg border border-border bg-card p-6">
           <h3 className="font-display text-2xl text-foreground">
             <em className="text-[var(--gold)]">Itinerary</em>
           </h3>
@@ -1539,7 +1541,7 @@ function DetailsTab({
 
   return (
     <div className="space-y-8">
-      <section className="rounded-lg border border-border bg-card/40 p-6">
+      <section className="rounded-lg border border-border bg-card p-6">
         <h2 className="font-display text-3xl text-foreground sm:text-4xl">
           <em className="text-[var(--gold)]">The house</em>
         </h2>
@@ -1591,7 +1593,7 @@ function DetailsTab({
         </dl>
       </section>
 
-      <section className="rounded-lg border border-border bg-card/40 p-6">
+      <section className="rounded-lg border border-border bg-card p-6">
         <h2 className="font-display text-3xl text-foreground sm:text-4xl">
           <em className="text-[var(--gold)]">The girls</em>
         </h2>
@@ -1608,7 +1610,7 @@ function DetailsTab({
         </div>
       </section>
 
-      <section className="rounded-lg border border-border bg-card/40 p-6">
+      <section className="rounded-lg border border-border bg-card p-6">
         <h2 className="font-display text-3xl text-foreground sm:text-4xl">
           <em className="text-[var(--gold)]">Cars & arrivals</em>
         </h2>
@@ -1727,7 +1729,7 @@ function ItineraryTab({
       {itinerary.map((day, dIdx) => (
         <section
           key={day.date}
-          className="rounded-lg border border-border bg-card/40 p-6"
+          className="rounded-lg border border-border bg-card p-6"
         >
           <div className="flex items-baseline justify-between gap-3">
             {adminMode ? (
@@ -1928,7 +1930,7 @@ function SpendTab({
 
   return (
     <div className="space-y-8">
-      <section className="rounded-lg border border-border bg-card/40 p-6">
+      <section className="rounded-lg border border-border bg-card p-6">
         <div className="flex flex-wrap items-baseline justify-between gap-3">
           <h2 className="font-display text-3xl text-foreground sm:text-4xl">
             <em className="text-[var(--gold)]">Payments</em>
@@ -2087,7 +2089,7 @@ function SpendTab({
         )}
       </section>
 
-      <section className="rounded-lg border border-border bg-card/40 p-6">
+      <section className="rounded-lg border border-border bg-card p-6">
         <div className="flex items-baseline justify-between">
           <h3 className="font-display text-2xl text-foreground">
             <em className="text-[var(--gold)]">Manage expenses</em>
@@ -2326,7 +2328,7 @@ function VibesTab({
   return (
     <div className="space-y-6">
       {themes.map((theme, idx) => (
-        <section key={theme.id} className="rounded-lg border border-border bg-card/40 p-6">
+        <section key={theme.id} className="rounded-lg border border-border bg-card p-6">
           {adminMode ? (
             <div className="space-y-3">
               <div className="flex items-start justify-between gap-3">
