@@ -245,6 +245,7 @@ type Expense = {
   perPerson: number;
   splitAmong: Name[];
   note?: string;
+  requested?: boolean;
 };
 
 const INITIAL_EXPENSES: Expense[] = [
@@ -340,6 +341,7 @@ export default function BachelorettePage() {
       if (data.houseInfo) setHouseInfo(data.houseInfo as typeof DEFAULT_HOUSE);
       if (data.claims) setClaims(data.claims as Record<string, Claim[]>);
       if (data.paid) setPaid(data.paid as PaidMap);
+      if (data.expenses) setExpenses(data.expenses as Expense[]);
     }).catch(() => {});
   }, []);
 
@@ -351,7 +353,7 @@ export default function BachelorettePage() {
       await saveContent({
         data: {
           password: "nyler",
-          content: { themes, sections, itinerary, cars, houseInfo, claims, paid },
+          content: { themes, sections, itinerary, cars, houseInfo, claims, paid, expenses },
         },
       });
       toast.success("Saved!");
@@ -381,6 +383,19 @@ export default function BachelorettePage() {
         content: { themes, sections, itinerary, cars, houseInfo, claims, paid: nextPaid },
       },
     }).catch((err) => console.error("Auto-save paid failed:", err));
+  };
+
+  const toggleRequested = (label: string) => {
+    const nextExpenses = expenses.map((e) =>
+      e.label === label ? { ...e, requested: e.requested === false ? true : false } : e
+    );
+    setExpenses(nextExpenses);
+    saveContent({
+      data: {
+        password: "nyler",
+        content: { themes, sections, itinerary, cars, houseInfo, claims, paid, expenses: nextExpenses },
+      },
+    }).catch((err) => console.error("Auto-save requested failed:", err));
   };
 
   const setThemesA = (v: Theme[]) => setThemes(v);
@@ -913,6 +928,7 @@ export default function BachelorettePage() {
             expenses={expenses}
             setExpenses={setExpenses}
             onToggle={togglePaid}
+            onToggleRequested={toggleRequested}
           />
         )}
       </main>
@@ -1471,19 +1487,26 @@ function DetailsTab({
             <ul className="mt-3 space-y-2">
               {userExpenses.map((e) => {
                 const hasPaid = !!paid[sg]?.[e.label];
+                const isRequested = e.requested !== false;
                 return (
                   <li key={e.label} className="flex items-center justify-between text-sm">
                     <span className="text-foreground">{e.label}</span>
-                    <span
-                      className={
-                        "rounded-full border px-3 py-1 text-xs font-medium uppercase tracking-wider " +
-                        (hasPaid
-                          ? "border-green-700/40 bg-green-900/20 text-green-400"
-                          : "border-border bg-background/30 text-muted-foreground")
-                      }
-                    >
-                      {hasPaid ? "Paid" : "Not paid"}
-                    </span>
+                    {!isRequested ? (
+                      <span className="rounded-full border border-amber-700/40 bg-amber-900/20 px-3 py-1 text-xs font-medium uppercase tracking-wider text-amber-400">
+                        Not requested yet
+                      </span>
+                    ) : (
+                      <span
+                        className={
+                          "rounded-full border px-3 py-1 text-xs font-medium uppercase tracking-wider " +
+                          (hasPaid
+                            ? "border-green-700/40 bg-green-900/20 text-green-400"
+                            : "border-border bg-background/30 text-muted-foreground")
+                        }
+                      >
+                        {hasPaid ? "Paid" : "Not paid"}
+                      </span>
+                    )}
                   </li>
                 );
               })}
@@ -1844,12 +1867,14 @@ function SpendTab({
   onToggle,
   expenses,
   setExpenses,
+  onToggleRequested,
 }: {
   paid: PaidMap;
   user: Name | "";
   onToggle: (name: Name, label: string) => void;
   expenses: Expense[];
   setExpenses: (e: Expense[]) => void;
+  onToggleRequested: (label: string) => void;
 }) {
   const isAdmin = user === ADMIN;
   const visibleNames = user && !isAdmin ? [user as Name] : NAMES;
@@ -1948,7 +1973,9 @@ function SpendTab({
                   <th className="border-b border-border px-2 py-2 text-left text-[11px] uppercase tracking-wider text-muted-foreground">
                     Name
                   </th>
-                  {expenses.map((e) => (
+                  {expenses.map((e) => {
+                    const isRequested = e.requested !== false;
+                    return (
                     <th
                       key={e.label}
                       className="border-b border-border px-2 py-2 text-center text-[11px] uppercase tracking-wider text-[var(--gold-soft)]"
@@ -1957,8 +1984,21 @@ function SpendTab({
                       <div className="text-muted-foreground normal-case tracking-normal">
                         ${e.perPerson}
                       </div>
+                      {isAdmin && (
+                        <button
+                          onClick={() => onToggleRequested(e.label)}
+                          className={`mt-1 rounded-full border px-2 py-0.5 text-[10px] normal-case tracking-normal transition ${
+                            isRequested
+                              ? "border-[var(--gold)]/40 text-[var(--gold-soft)]"
+                              : "border-amber-700/40 bg-amber-900/20 text-amber-400"
+                          }`}
+                        >
+                          {isRequested ? "requested" : "not requested yet"}
+                        </button>
+                      )}
                     </th>
-                  ))}
+                  );
+                  })}
                 </tr>
               </thead>
               <tbody>
@@ -1972,6 +2012,7 @@ function SpendTab({
                       {expenses.map((e) => {
                         const inSplit = e.splitAmong.includes(n);
                         const hasPaid = !!paid[n]?.[e.label];
+                        const isRequested = e.requested !== false;
                         if (!inSplit) {
                           return (
                             <td
@@ -1979,6 +2020,18 @@ function SpendTab({
                               className="border-b border-border px-2 py-2 text-center text-muted-foreground/40"
                             >
                               —
+                            </td>
+                          );
+                        }
+                        if (!isRequested) {
+                          return (
+                            <td
+                              key={e.label}
+                              className="border-b border-border px-2 py-2 text-center"
+                            >
+                              <span className="rounded-full border border-amber-700/40 bg-amber-900/20 px-2 py-0.5 text-[10px] text-amber-400">
+                                soon
+                              </span>
                             </td>
                           );
                         }
@@ -2022,6 +2075,7 @@ function SpendTab({
                   <ul className="mt-2 space-y-1.5">
                     {userExpenses.map((e) => {
                       const hasPaid = !!paid[n]?.[e.label];
+                      const isRequested = e.requested !== false;
                       return (
                         <li
                           key={e.label}
@@ -2033,16 +2087,22 @@ function SpendTab({
                               ${e.perPerson}
                             </span>
                           </span>
-                          <button
-                            onClick={() => onToggle(n, e.label)}
-                            className={`cursor-pointer rounded-full border px-3 py-1 text-xs font-medium uppercase tracking-wider transition hover:border-[var(--gold)] ${
-                              hasPaid
-                                ? "border-green-700/40 bg-green-900/20 text-green-400"
-                                : "border-border bg-background/30 text-muted-foreground"
-                            }`}
-                          >
-                            {hasPaid ? "Paid" : "Not paid"}
-                          </button>
+                          {!isRequested ? (
+                            <span className="rounded-full border border-amber-700/40 bg-amber-900/20 px-3 py-1 text-xs font-medium uppercase tracking-wider text-amber-400">
+                              Not requested yet
+                            </span>
+                          ) : (
+                            <button
+                              onClick={() => onToggle(n, e.label)}
+                              className={`cursor-pointer rounded-full border px-3 py-1 text-xs font-medium uppercase tracking-wider transition hover:border-[var(--gold)] ${
+                                hasPaid
+                                  ? "border-green-700/40 bg-green-900/20 text-green-400"
+                                  : "border-border bg-background/30 text-muted-foreground"
+                              }`}
+                            >
+                              {hasPaid ? "Paid" : "Not paid"}
+                            </button>
+                          )}
                         </li>
                       );
                     })}
