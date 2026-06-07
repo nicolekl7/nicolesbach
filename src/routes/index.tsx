@@ -760,6 +760,7 @@ export default function BachelorettePage() {
             setHouseInfo={adminMode ? setHouseInfoA : undefined}
             itinerary={itinerary}
             setItinerary={adminMode ? setItineraryA : undefined}
+            sections={sections}
           />
         )}
         {tab === "itinerary" && (
@@ -1355,6 +1356,7 @@ function DetailsTab({
   setHouseInfo,
   itinerary,
   setItinerary,
+  sections,
 }: {
   claims: Record<string, Claim[]>;
   paid: PaidMap;
@@ -1366,6 +1368,7 @@ function DetailsTab({
   setHouseInfo?: (h: typeof DEFAULT_HOUSE) => void;
   itinerary: ItinDay[];
   setItinerary?: (it: ItinDay[]) => void;
+  sections: Section[];
 }) {
   const [selectedGirl, setSelectedGirl] = useState<Name | null>(null);
   const lockedToUser = user !== "" && user !== ADMIN;
