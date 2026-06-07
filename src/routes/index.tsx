@@ -292,7 +292,18 @@ function MartiniGlass({ className = "" }: { className?: string }) {
 }
 
 export default function BachelorettePage() {
-  const [user, setUser] = useState<Name | "">("");
+  const [user, setUser] = useState<Name | "">(() => {
+    try {
+      const saved = localStorage.getItem("bach-user");
+      return (NAMES as readonly string[]).includes(saved ?? "") ? (saved as Name) : "";
+    } catch {
+      return "";
+    }
+  });
+  const setUserPersisted = (name: Name | "") => {
+    try { localStorage.setItem("bach-user", name); } catch {}
+    setUser(name);
+  };
   const [claims, setClaims] = useState<Record<string, Claim[]>>(INITIAL_CLAIMS);
   const [tab, setTab] = useState<"details" | "itinerary" | "signup" | "vibes" | "payments">("details");
   const [formFor, setFormFor] = useState<string | null>(null);
@@ -397,7 +408,7 @@ export default function BachelorettePage() {
   };
 
   const pickNameAndProceed = (name: Name) => {
-    setUser(name);
+    setUserPersisted(name);
     setShowNamePicker(false);
     if (pendingItemId) {
       const allItems = sections.flatMap((s) => s.items);
@@ -702,7 +713,7 @@ export default function BachelorettePage() {
             </label>
             <select
               value={user}
-              onChange={(e) => setUser(e.target.value as Name | "")}
+              onChange={(e) => setUserPersisted(e.target.value as Name | "")}
               className="w-full rounded-md border border-border bg-card px-4 py-3 text-base text-foreground outline-none transition focus:border-[var(--gold)] focus:ring-1 focus:ring-[var(--gold)]"
             >
               <option value="">Select your name</option>
