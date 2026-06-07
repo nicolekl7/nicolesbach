@@ -339,6 +339,7 @@ export default function BachelorettePage() {
       if (data.cars) setCars(data.cars as typeof DEFAULT_CARS);
       if (data.houseInfo) setHouseInfo(data.houseInfo as typeof DEFAULT_HOUSE);
       if (data.claims) setClaims(data.claims as Record<string, Claim[]>);
+      if (data.paid) setPaid(data.paid as PaidMap);
     }).catch(() => {});
   }, []);
 
@@ -350,7 +351,7 @@ export default function BachelorettePage() {
       await saveContent({
         data: {
           password: "nyler",
-          content: { themes, sections, itinerary, cars, houseInfo, claims },
+          content: { themes, sections, itinerary, cars, houseInfo, claims, paid },
         },
       });
       toast.success("Saved!");
@@ -366,9 +367,20 @@ export default function BachelorettePage() {
     saveContent({
       data: {
         password: "nyler",
-        content: { themes, sections, itinerary, cars, houseInfo, claims: nextClaims },
+        content: { themes, sections, itinerary, cars, houseInfo, claims: nextClaims, paid },
       },
     }).catch((err) => console.error("Auto-save claims failed:", err));
+  };
+
+  const togglePaid = (n: Name, label: string) => {
+    const nextPaid = { ...paid, [n]: { ...paid[n], [label]: !paid[n]?.[label] } };
+    setPaid(nextPaid);
+    saveContent({
+      data: {
+        password: "nyler",
+        content: { themes, sections, itinerary, cars, houseInfo, claims, paid: nextPaid },
+      },
+    }).catch((err) => console.error("Auto-save paid failed:", err));
   };
 
   const setThemesA = (v: Theme[]) => setThemes(v);
@@ -900,12 +912,7 @@ export default function BachelorettePage() {
             user={user}
             expenses={expenses}
             setExpenses={setExpenses}
-            onToggle={(n, label) =>
-              setPaid({
-                ...paid,
-                [n]: { ...paid[n], [label]: !paid[n]?.[label] },
-              })
-            }
+            onToggle={togglePaid}
           />
         )}
       </main>
