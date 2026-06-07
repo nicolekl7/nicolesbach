@@ -134,11 +134,11 @@
   html, body {
     background-color: #fef9dd;
     background-image: repeating-linear-gradient(
-      -45deg,
+      to right,
       #96c587 0px,
-      #96c587 40px,
-      #fef9dd 40px,
-      #fef9dd 80px
+      #96c587 16px,
+      #fef9dd 16px,
+      #fef9dd 32px
     );
     background-attachment: fixed;
     color: var(--color-foreground);
