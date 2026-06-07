@@ -662,7 +662,7 @@ export default function BachelorettePage() {
               </button>
               <button
                 onClick={() => { setShowAddItem(false); setAddItemName(""); setAddItemNote(""); }}
-                className="rounded-md border border-border px-4 py-2 text-sm text-muted-foreground hover:text-foreground"
+                className="rounded-md border border-border bg-[#fef9dd] px-4 py-2 text-sm text-foreground"
               >
                 Cancel
               </button>
@@ -705,7 +705,7 @@ export default function BachelorettePage() {
               </button>
               <button
                 onClick={() => { setShowAdminModal(false); setAdminPw(""); setAdminPwError(false); }}
-                className="rounded-md border border-border px-4 py-2.5 text-xs uppercase tracking-wider text-muted-foreground"
+                className="rounded-md border border-border bg-[#fef9dd] px-4 py-2.5 text-xs uppercase tracking-wider text-foreground"
               >
                 Cancel
               </button>
@@ -729,7 +729,7 @@ export default function BachelorettePage() {
             </h1>
           </div>
           {/* Name selector */}
-          <div className="mx-auto mt-6 inline-block rounded-xl bg-card px-6 py-4">
+          <div className={`mx-auto mt-6 inline-block rounded-xl bg-card px-6 py-4 transition ${user ? "ring-2 ring-[var(--gold)] ring-offset-2 ring-offset-card" : ""}`}>
             <label className="mb-2 block text-xs uppercase tracking-[0.25em] text-muted-foreground">
               I am…
             </label>
@@ -1232,7 +1232,7 @@ function ItemRow({
             </button>
             <button
               onClick={onCloseForm}
-              className="rounded-md border border-border px-3 py-2 text-xs uppercase tracking-wider text-muted-foreground"
+              className="rounded-md border border-border bg-[#fef9dd] px-3 py-2 text-xs uppercase tracking-wider text-foreground"
             >
               Cancel
             </button>
@@ -2232,7 +2232,7 @@ function SpendTab({
               </button>
               <button
                 onClick={() => setAdding(false)}
-                className="rounded-md border border-border px-3 py-2 text-xs uppercase tracking-wider text-muted-foreground"
+                className="rounded-md border border-border bg-[#fef9dd] px-3 py-2 text-xs uppercase tracking-wider text-foreground"
               >
                 Cancel
               </button>
@@ -2302,7 +2302,7 @@ function SpendTab({
                         className="rounded-md bg-[var(--gold)] px-3 py-1.5 text-xs uppercase tracking-wider text-[var(--olive-deep)]"
                       >Save</button>
                       <button onClick={() => { setEditingLabel(null); setEditFields({}); }}
-                        className="rounded-md border border-border px-3 py-1.5 text-xs uppercase tracking-wider text-muted-foreground"
+                        className="rounded-md border border-border bg-[#fef9dd] px-3 py-1.5 text-xs uppercase tracking-wider text-foreground"
                       >Cancel</button>
                     </div>
                   </div>
