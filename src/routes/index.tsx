@@ -523,7 +523,7 @@ export default function BachelorettePage() {
     saveContent({
       data: {
         password: "nyler",
-        content: { themes, sections: nextSections, itinerary, cars, houseInfo, claims: nextClaims },
+        content: { themes, sections: nextSections, itinerary, cars, houseInfo, claims: nextClaims, paid, expenses },
       },
     }).catch((err) => console.error("Auto-save custom item failed:", err));
     setShowAddItem(false);
