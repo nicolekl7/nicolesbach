@@ -1427,7 +1427,8 @@ function DetailsTab({
       count,
       note,
     }));
-    const byoItems = allItems.filter((i) => i.qty === "byo");
+    const defaultAllItems = DEFAULT_SECTIONS.flatMap((s) => s.items);
+    const byoItems = defaultAllItems.filter((i) => i.qty === "byo");
     const userExpenses = expenses.filter((e) => e.splitAmong.includes(sg));
     const earlyLeavers = ["Phoebe", "Taylor", "Casey"];
     const leavesEarly = earlyLeavers.includes(sg);
