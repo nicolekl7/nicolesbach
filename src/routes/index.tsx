@@ -181,10 +181,10 @@ const DEFAULT_ITINERARY: ItinDay[] = [
   },
 ];
 
-const DEFAULT_CARS: { name: string; people: string; leave: string; arrive: string }[] = [
-  { name: "Car #1", people: "Sabrina, Phoebe, Jane", leave: "9:00 AM", arrive: "2:30 PM" },
-  { name: "Car #2", people: "Lara, Jess, Nicole, p/u Casey", leave: "9:30 AM", arrive: "4:00 PM" },
-  { name: "Car #3", people: "Isabel, Kait, Taylor", leave: "10:00 AM", arrive: "4:00 PM" },
+const DEFAULT_CARS: { name: string; people: string; leave: string; arrive: string; driver?: string }[] = [
+  { name: "Car #1", people: "Sabrina, Phoebe, Jane", leave: "9:00 AM", arrive: "2:30 PM", driver: "Sabrina" },
+  { name: "Car #2", people: "Lara, Jess, Nicole, p/u Casey", leave: "9:30 AM", arrive: "4:00 PM", driver: "Lara" },
+  { name: "Car #3", people: "Isabel, Kait, Taylor", leave: "10:00 AM", arrive: "4:00 PM", driver: "Isabel" },
   { name: "Car #4", people: "Charlene", leave: "1:00 PM", arrive: "4:00 PM" },
 ];
 
@@ -304,6 +304,7 @@ export default function BachelorettePage() {
     setUser(name);
   };
   const [claims, setClaims] = useState<Record<string, Claim[]>>(INITIAL_CLAIMS);
+  const [activitySignups, setActivitySignups] = useState<Record<string, Name[]>>({});
   const [tab, setTab] = useState<"details" | "itinerary" | "signup" | "vibes" | "payments">("details");
   const [formFor, setFormFor] = useState<string | null>(null);
   const [pendingItemId, setPendingItemId] = useState<string | null>(null);
@@ -343,6 +344,7 @@ export default function BachelorettePage() {
       if (data.claims) setClaims(data.claims as Record<string, Claim[]>);
       if (data.paid) setPaid(data.paid as PaidMap);
       if (data.expenses) setExpenses(data.expenses as Expense[]);
+      if (data.activitySignups) setActivitySignups(data.activitySignups as Record<string, Name[]>);
     }).catch(() => {});
   }, []);
 
@@ -354,7 +356,7 @@ export default function BachelorettePage() {
       await saveContent({
         data: {
           password: "nyler",
-          content: { themes, sections, itinerary, cars, houseInfo, claims, paid, expenses },
+          content: { themes, sections, itinerary, cars, houseInfo, claims, paid, expenses, activitySignups },
         },
       });
       toast.success("Saved!");
@@ -394,6 +396,19 @@ export default function BachelorettePage() {
         content: { themes, sections, itinerary, cars, houseInfo, claims, paid: nextPaid, expenses },
       },
     }).catch((err) => console.error("Auto-save paid failed:", err));
+  };
+
+  const toggleActivity = (key: string, name: Name) => {
+    const current = activitySignups[key] ?? [];
+    const next = current.includes(name) ? current.filter((n) => n !== name) : [...current, name];
+    const nextSignups = { ...activitySignups, [key]: next };
+    setActivitySignups(nextSignups);
+    saveContent({
+      data: {
+        password: "nyler",
+        content: { themes, sections, itinerary, cars, houseInfo, claims, paid, expenses, activitySignups: nextSignups },
+      },
+    }).catch((err) => console.error("Auto-save activity failed:", err));
   };
 
   const setThemesA = (v: Theme[]) => setThemes(v);
@@ -789,6 +804,8 @@ export default function BachelorettePage() {
             setItinerary={adminMode ? setItineraryA : undefined}
             sections={sections}
             onGoToVibes={() => setTab("vibes")}
+            activitySignups={activitySignups}
+            onToggleActivity={toggleActivity}
           />
         )}
         {tab === "itinerary" && (
@@ -796,6 +813,9 @@ export default function BachelorettePage() {
             itinerary={itinerary}
             setItinerary={adminMode ? setItineraryA : undefined}
             onGoToVibes={() => setTab("vibes")}
+            user={user}
+            activitySignups={activitySignups}
+            onToggleActivity={toggleActivity}
           />
         )}
         {tab === "signup" && (
@@ -1565,6 +1585,8 @@ function DetailsTab({
   setItinerary?: (it: ItinDay[]) => void;
   sections: Section[];
   onGoToVibes?: () => void;
+  activitySignups?: Record<string, Name[]>;
+  onToggleActivity?: (key: string, name: Name) => void;
 }) {
   const [selectedGirl, setSelectedGirl] = useState<Name | null>(null);
   const lockedToUser = user !== "" && user !== ADMIN;
@@ -1573,7 +1595,10 @@ function DetailsTab({
 
   if (activeGirl) {
     const sg = activeGirl;
-    const car = cars.find((c) => c.people.includes(sg));
+    const car = cars.find((c) =>
+      c.people.split(",").map((p) => p.trim()).some((p) => p === sg || p.startsWith(sg)) ||
+      c.driver === sg
+    );
     const items: { label: string; note?: string }[] = [];
     for (const section of ([] as Section[])) {
       for (const item of section.items) {
@@ -1625,7 +1650,7 @@ function DetailsTab({
             <h3 className="font-display text-2xl text-foreground">
               <em className="text-[var(--gold)]">Your ride</em>
             </h3>
-            <p className="mt-3 text-sm font-medium text-foreground">{car.name}</p>
+            <p className="mt-3 text-sm font-medium text-foreground">{car.name}{car.driver && <span className="ml-2 text-xs font-normal text-muted-foreground">· {car.driver} driving</span>}</p>
             <p className="text-xs text-muted-foreground">
               Leave {car.leave} · Arrive {car.arrive}
             </p>
@@ -1716,16 +1741,43 @@ function DetailsTab({
                 <ul className="mt-2 space-y-1.5">
                   {day.blocks.map((b, i) => {
                     const hasTheme = /theme/i.test(b.what);
+                    const isOptional = /optional/i.test(b.what);
+                    const key = `${day.date}::${b.time}`;
+                    const signedUp = activitySignups?.[key] ?? [];
+                    const isIn = signedUp.includes(sg);
                     return (
                       <li key={i} className="flex gap-3 text-sm">
                         <span className="w-16 shrink-0 tabular-nums text-muted-foreground">{b.time}</span>
-                        {hasTheme && onGoToVibes ? (
-                          <button onClick={onGoToVibes} className="text-left text-foreground underline decoration-dotted underline-offset-2 hover:opacity-70">
-                            {b.what}
-                          </button>
-                        ) : (
-                          <span className="text-foreground">{b.what}</span>
-                        )}
+                        <div className="flex-1">
+                          {hasTheme && onGoToVibes ? (
+                            <button onClick={onGoToVibes} className="text-left text-foreground underline decoration-dotted underline-offset-2 hover:opacity-70">
+                              {b.what}
+                            </button>
+                          ) : (
+                            <span className="text-foreground">{b.what}</span>
+                          )}
+                          {isOptional && (
+                            <div className="mt-1 flex flex-wrap items-center gap-2">
+                              {onToggleActivity && (
+                                <button
+                                  onClick={() => onToggleActivity(key, sg)}
+                                  className={`rounded-full border px-2.5 py-1 text-[10px] uppercase tracking-wider transition ${isIn ? "border-[var(--gold)] bg-[var(--gold)]/10 text-[var(--gold-soft)]" : "border-border bg-background/30 text-muted-foreground hover:border-[var(--gold)] hover:text-[var(--gold)]"}`}
+                                >
+                                  {isIn ? "I'm in ✓" : "I'm in!"}
+                                </button>
+                              )}
+                              {signedUp.length > 0 && (
+                                <div className="flex flex-wrap gap-1">
+                                  {signedUp.map((n) => (
+                                    <span key={n} title={n} className="flex h-6 w-6 items-center justify-center rounded-full border border-[var(--gold)]/40 bg-[var(--gold)]/10 text-[10px] font-medium text-[var(--gold-soft)]">
+                                      {n.slice(0, 2)}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </li>
                     );
                   })}
@@ -1906,10 +1958,16 @@ function ItineraryTab({
   itinerary,
   setItinerary,
   onGoToVibes,
+  user,
+  activitySignups,
+  onToggleActivity,
 }: {
   itinerary: ItinDay[];
   setItinerary?: (it: ItinDay[]) => void;
   onGoToVibes?: () => void;
+  user?: Name | "";
+  activitySignups?: Record<string, Name[]>;
+  onToggleActivity?: (key: string, name: Name) => void;
 }) {
   const adminMode = !!setItinerary;
   const dragBlock = useRef<{ dIdx: number; bIdx: number } | null>(null);
@@ -2022,13 +2080,45 @@ function ItineraryTab({
                 ) : (
                   <>
                     <span className="w-20 shrink-0 text-sm tabular-nums text-[var(--gold-soft)]">{b.time}</span>
-                    {/theme/i.test(b.what) && onGoToVibes ? (
-                      <button onClick={onGoToVibes} className="text-left text-sm text-foreground underline decoration-dotted underline-offset-2 hover:opacity-70">
-                        {b.what}
-                      </button>
-                    ) : (
-                      <span className="text-sm text-foreground">{b.what}</span>
-                    )}
+                    <div className="flex-1">
+                      {/theme/i.test(b.what) && onGoToVibes ? (
+                        <button onClick={onGoToVibes} className="text-left text-sm text-foreground underline decoration-dotted underline-offset-2 hover:opacity-70">
+                          {b.what}
+                        </button>
+                      ) : (
+                        <span className="text-sm text-foreground">{b.what}</span>
+                      )}
+                      {/optional/i.test(b.what) && (() => {
+                        const key = `${day.date}::${b.time}`;
+                        const signedUp = activitySignups?.[key] ?? [];
+                        const isIn = user ? signedUp.includes(user as Name) : false;
+                        return (
+                          <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                            {user && user !== "admin" && onToggleActivity && (
+                              <button
+                                onClick={() => onToggleActivity(key, user as Name)}
+                                className={`rounded-full border px-2.5 py-1 text-[10px] uppercase tracking-wider transition ${isIn ? "border-[var(--gold)] bg-[var(--gold)]/10 text-[var(--gold-soft)]" : "border-border bg-background/30 text-muted-foreground hover:border-[var(--gold)] hover:text-[var(--gold)]"}`}
+                              >
+                                {isIn ? "I'm in ✓" : "I'm in!"}
+                              </button>
+                            )}
+                            {signedUp.length > 0 && (
+                              <div className="flex flex-wrap gap-1">
+                                {signedUp.map((n) => (
+                                  <span
+                                    key={n}
+                                    title={n}
+                                    className="flex h-6 w-6 items-center justify-center rounded-full border border-[var(--gold)]/40 bg-[var(--gold)]/10 text-[10px] font-medium text-[var(--gold-soft)]"
+                                  >
+                                    {n.slice(0, 2)}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
+                    </div>
                   </>
                 )}
               </li>
