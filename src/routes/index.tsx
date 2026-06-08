@@ -1367,6 +1367,164 @@ function EditableField({
   );
 }
 
+function AdminPackingList({
+  sections,
+  claims,
+}: {
+  sections: Section[];
+  claims: Record<string, Claim[]>;
+}) {
+  const [view, setView] = useState<"by-item" | "by-person">("by-item");
+
+  const copyToClipboard = () => {
+    let text = "";
+    if (view === "by-item") {
+      for (const sec of sections) {
+        const lines: string[] = [];
+        for (const item of sec.items) {
+          const claimList = claims[item.id] ?? [];
+          if (item.qty === "byo") {
+            lines.push(`  ${item.label} — everyone (BYO)`);
+          } else if (claimList.length === 0) {
+            lines.push(`  ${item.label} — nobody yet`);
+          } else {
+            const who = claimList.map((c) => c.name + (c.note ? ` (${c.note})` : "")).join(", ");
+            lines.push(`  ${item.label} — ${who}`);
+          }
+        }
+        text += `${sec.title}\n${lines.join("\n")}\n\n`;
+      }
+    } else {
+      const allItems = sections.flatMap((s) => s.items);
+      const byPerson: Record<string, string[]> = {};
+      for (const item of allItems) {
+        if (item.qty === "byo") {
+          for (const n of NAMES) {
+            byPerson[n] = byPerson[n] ?? [];
+            byPerson[n].push(`${item.label} (BYO)`);
+          }
+        } else {
+          for (const c of claims[item.id] ?? []) {
+            byPerson[c.name] = byPerson[c.name] ?? [];
+            byPerson[c.name].push(item.label + (c.note ? ` (${c.note})` : ""));
+          }
+        }
+      }
+      for (const n of NAMES) {
+        const items = byPerson[n] ?? [];
+        text += `${n}\n${items.length ? items.map((i) => `  ${i}`).join("\n") : "  nothing yet"}\n\n`;
+      }
+    }
+    navigator.clipboard.writeText(text.trim()).then(() => toast.success("Copied to clipboard!"));
+  };
+
+  const allItems = sections.flatMap((s) => s.items);
+  const byPerson: Record<string, { label: string; note?: string }[]> = {};
+  for (const item of allItems) {
+    if (item.qty === "byo") {
+      for (const n of NAMES) {
+        byPerson[n] = byPerson[n] ?? [];
+        byPerson[n].push({ label: item.label });
+      }
+    } else {
+      for (const c of claims[item.id] ?? []) {
+        byPerson[c.name] = byPerson[c.name] ?? [];
+        byPerson[c.name].push({ label: item.label, note: c.note });
+      }
+    }
+  }
+
+  return (
+    <section className="rounded-lg border border-border bg-card p-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="font-display text-3xl text-foreground sm:text-4xl">
+          <em className="text-[var(--gold)]">Who's bringing what</em>
+        </h2>
+        <div className="flex gap-2">
+          <div className="flex rounded-md border border-border overflow-hidden text-xs uppercase tracking-wider">
+            <button
+              onClick={() => setView("by-item")}
+              className={`px-3 py-1.5 transition ${view === "by-item" ? "bg-[var(--gold)] text-[var(--olive-deep)]" : "bg-background/30 text-muted-foreground hover:text-foreground"}`}
+            >By item</button>
+            <button
+              onClick={() => setView("by-person")}
+              className={`px-3 py-1.5 transition border-l border-border ${view === "by-person" ? "bg-[var(--gold)] text-[var(--olive-deep)]" : "bg-background/30 text-muted-foreground hover:text-foreground"}`}
+            >By person</button>
+          </div>
+          <button
+            onClick={copyToClipboard}
+            className="rounded-md border border-border bg-background/30 px-3 py-1.5 text-xs uppercase tracking-wider text-muted-foreground transition hover:border-[var(--gold)] hover:text-[var(--gold)]"
+          >Copy</button>
+        </div>
+      </div>
+
+      {view === "by-item" ? (
+        <div className="mt-5 space-y-5">
+          {sections.map((sec) => (
+            <div key={sec.id}>
+              <p className="text-[10px] uppercase tracking-[0.2em] text-[var(--gold-soft)]">{sec.title}</p>
+              <ul className="mt-2 divide-y divide-border">
+                {sec.items.map((item) => {
+                  const claimList = claims[item.id] ?? [];
+                  const isByo = item.qty === "byo";
+                  return (
+                    <li key={item.id} className="flex items-baseline justify-between gap-4 py-2 text-sm">
+                      <span className="text-foreground">{item.label}</span>
+                      {isByo ? (
+                        <span className="text-xs text-[var(--gold-soft)] italic">everyone (BYO)</span>
+                      ) : claimList.length === 0 ? (
+                        <span className="text-xs text-muted-foreground italic">nobody yet</span>
+                      ) : (
+                        <span className="text-right text-xs text-muted-foreground">
+                          {claimList.map((c, i) => (
+                            <span key={i}>
+                              <span className="text-foreground">{c.name}</span>
+                              {c.note && <span className="opacity-60"> ({c.note})</span>}
+                              {i < claimList.length - 1 && ", "}
+                            </span>
+                          ))}
+                        </span>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="mt-5 grid gap-4 sm:grid-cols-2">
+          {NAMES.map((n) => {
+            const claimedItems = allItems
+              .filter((item) => item.qty !== "byo" && (claims[item.id] ?? []).some((c) => c.name === n))
+              .map((item) => ({ label: item.label, note: (claims[item.id] ?? []).find((c) => c.name === n)?.note }));
+            const byoItemLabels = allItems.filter((i) => i.qty === "byo");
+            return (
+              <div key={n} className="rounded-md border border-border bg-background/20 p-3">
+                <p className="font-display text-lg italic text-[var(--gold)]">{n}</p>
+                {claimedItems.length === 0 && byoItemLabels.length === 0 ? (
+                  <p className="mt-1 text-xs italic text-muted-foreground">nothing signed up</p>
+                ) : (
+                  <ul className="mt-1.5 space-y-0.5">
+                    {claimedItems.map((it, i) => (
+                      <li key={i} className="text-xs text-foreground">
+                        {it.label}{it.note && <span className="opacity-60"> · {it.note}</span>}
+                      </li>
+                    ))}
+                    {byoItemLabels.map((it) => (
+                      <li key={it.id} className="text-xs text-muted-foreground italic">{it.label} (BYO)</li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </section>
+  );
+}
+
 function DetailsTab({
   claims,
   paid,
@@ -1643,6 +1801,10 @@ function DetailsTab({
           ))}
         </div>
       </section>
+
+      {adminMode && (
+        <AdminPackingList sections={DEFAULT_SECTIONS} claims={claims} />
+      )}
 
       <section className="rounded-lg border border-border bg-card p-6">
         <h2 className="font-display text-3xl text-foreground sm:text-4xl">
