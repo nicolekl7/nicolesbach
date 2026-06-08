@@ -1390,7 +1390,12 @@ function AdminPackingList({
           } else if (claimList.length === 0) {
             lines.push(`  ${item.label} — nobody yet`);
           } else {
-            const who = claimList.map((c) => c.name + (c.note ? ` (${c.note})` : "")).join(", ");
+            const grouped = claimList.reduce<Record<string, { count: number; note?: string }>>((acc, c) => {
+              if (!acc[c.name]) acc[c.name] = { count: 0, note: c.note };
+              acc[c.name].count++;
+              return acc;
+            }, {});
+            const who = Object.entries(grouped).map(([n, { count, note }]) => n + (count > 1 ? ` (${count})` : "") + (note ? ` · ${note}` : "")).join(", ");
             lines.push(`  ${item.label} — ${who}`);
           }
         }
@@ -1478,11 +1483,18 @@ function AdminPackingList({
                         <span className="text-xs text-muted-foreground italic">nobody yet</span>
                       ) : (
                         <span className="text-right text-xs text-muted-foreground">
-                          {claimList.map((c, i) => (
-                            <span key={i}>
-                              <span className="text-foreground">{c.name}</span>
-                              {c.note && <span className="opacity-60"> ({c.note})</span>}
-                              {i < claimList.length - 1 && ", "}
+                          {Object.entries(
+                            claimList.reduce<Record<string, { count: number; note?: string }>>((acc, c) => {
+                              if (!acc[c.name]) acc[c.name] = { count: 0, note: c.note };
+                              acc[c.name].count++;
+                              return acc;
+                            }, {})
+                          ).map(([name, { count, note }], i, arr) => (
+                            <span key={name}>
+                              <span className="text-foreground">{name}</span>
+                              {count > 1 && <span className="opacity-60"> ({count})</span>}
+                              {note && <span className="opacity-60"> · {note}</span>}
+                              {i < arr.length - 1 && ", "}
                             </span>
                           ))}
                         </span>
