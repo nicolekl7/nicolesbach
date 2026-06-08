@@ -352,7 +352,7 @@ export default function BachelorettePage() {
       await saveContent({
         data: {
           password: "nyler",
-          content: { themes, sections, itinerary, cars, houseInfo, claims, paid },
+          content: { themes, sections, itinerary, cars, houseInfo, claims, paid, expenses },
         },
       });
       toast.success("Saved!");
@@ -1427,6 +1427,7 @@ function DetailsTab({
       count,
       note,
     }));
+    const byoItems = allItems.filter((i) => i.qty === "byo");
     const userExpenses = expenses.filter((e) => e.splitAmong.includes(sg));
     const earlyLeavers = ["Phoebe", "Taylor", "Casey"];
     const leavesEarly = earlyLeavers.includes(sg);
@@ -1463,7 +1464,7 @@ function DetailsTab({
           <h3 className="font-display text-2xl text-foreground">
             <em className="text-[var(--gold)]">You're bringing</em>
           </h3>
-          {allClaimedItems.length === 0 ? (
+          {allClaimedItems.length === 0 && byoItems.length === 0 ? (
             <p className="mt-3 text-sm italic text-muted-foreground">Nothing signed up yet</p>
           ) : (
             <div className="mt-3 flex flex-wrap gap-2">
@@ -1474,6 +1475,15 @@ function DetailsTab({
                 >
                   {it.label} ({it.count})
                   {it.note && <span className="ml-1 opacity-70">· {it.note}</span>}
+                </span>
+              ))}
+              {byoItems.map((it) => (
+                <span
+                  key={it.id}
+                  className="rounded-full border border-dashed border-[var(--gold-soft)] bg-transparent px-3 py-1.5 text-sm text-[var(--gold-soft)]"
+                >
+                  {it.label}
+                  <span className="ml-1.5 text-[10px] uppercase tracking-wider opacity-60">BYO</span>
                 </span>
               ))}
             </div>
