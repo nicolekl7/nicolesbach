@@ -343,7 +343,14 @@ export default function BachelorettePage() {
       if (data.houseInfo) setHouseInfo(data.houseInfo as typeof DEFAULT_HOUSE);
       if (data.claims) setClaims(data.claims as Record<string, Claim[]>);
       if (data.paid) setPaid(data.paid as PaidMap);
-      if (data.expenses) setExpenses(data.expenses as Expense[]);
+      if (data.expenses) {
+        const loaded = data.expenses as Expense[];
+        const merged = loaded.map((e) => {
+          const def = INITIAL_EXPENSES.find((d) => d.label === e.label);
+          return def?.dueDate && !e.dueDate ? { ...e, dueDate: def.dueDate } : e;
+        });
+        setExpenses(merged);
+      }
       if (data.activitySignups) setActivitySignups(data.activitySignups as Record<string, Name[]>);
     }).catch(() => {});
   }, []);
