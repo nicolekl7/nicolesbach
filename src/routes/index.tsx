@@ -267,6 +267,7 @@ const INITIAL_EXPENSES: Expense[] = [
     perPerson: 80,
     splitAmong: [...NAMES],
     note: "$100 deposit paid 4/7. Split 10 ways.",
+    dueDate: "2099-01-01",
   },
 ];
 
@@ -341,6 +342,7 @@ export default function BachelorettePage() {
       if (data.houseInfo) setHouseInfo(data.houseInfo as typeof DEFAULT_HOUSE);
       if (data.claims) setClaims(data.claims as Record<string, Claim[]>);
       if (data.paid) setPaid(data.paid as PaidMap);
+      if (data.expenses) setExpenses(data.expenses as Expense[]);
     }).catch(() => {});
   }, []);
 
