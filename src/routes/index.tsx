@@ -1572,6 +1572,8 @@ function DetailsTab({
   setItinerary,
   sections,
   onGoToVibes,
+  activitySignups,
+  onToggleActivity,
 }: {
   claims: Record<string, Claim[]>;
   paid: PaidMap;
