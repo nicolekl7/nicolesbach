@@ -42,10 +42,7 @@ type PayStatus = "paid" | "owed" | "not-due";
 type PaidMap = Record<Name, Record<string, PayStatus>>;
 
 const INITIAL_PAID: PaidMap = Object.fromEntries(
-  NAMES.map((n) => {
-    const house = n === "Taylor" ? "owed" : "paid";
-    return [n, { "House": house, "Boat — Octolounge Kraken": "not-due" }];
-  })
+  NAMES.map((n) => [n, { "House": "paid", "Boat — Octolounge Kraken": "not-due" }])
 ) as PaidMap;
 
 type Claim = { name: Name; note?: string };
