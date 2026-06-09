@@ -184,9 +184,9 @@ const DEFAULT_ITINERARY: ItinDay[] = [
 ];
 
 const DEFAULT_CARS: { name: string; people: string; leave: string; arrive: string; driver?: string }[] = [
-  { name: "Sabrina's car", people: "Sabrina, Phoebe, Jane, Charlene", leave: "9:00 AM", arrive: "2:30 PM", driver: "Sabrina" },
-  { name: "Lara's car", people: "Lara, Jess, Nicole, p/u Casey", leave: "9:30 AM", arrive: "4:00 PM", driver: "Lara" },
-  { name: "Isabel's car", people: "Isabel, Kait, Taylor", leave: "10:00 AM", arrive: "4:00 PM", driver: "Isabel" },
+  { name: "Sabrina's car", people: "Sabrina, Phoebe, Jane, and picking up Char", leave: "9:00 AM", arrive: "2:30 PM", driver: "Sabrina" },
+  { name: "Lara's car", people: "Lara, Jess, and Nicole", leave: "9:00 AM", arrive: "3:00 PM", driver: "Lara" },
+  { name: "Isabel's car", people: "Isabel, Kait, Taylor, and picking up Casey", leave: "9:00 AM", arrive: "3:30 PM", driver: "Isabel" },
 ];
 
 const DEFAULT_HOUSE = {
@@ -338,7 +338,7 @@ export default function BachelorettePage() {
       if (data.themes) setThemes(data.themes as Theme[]);
       if (data.sections) setSections(data.sections as Section[]);
       if (data.itinerary) setItinerary(data.itinerary as ItinDay[]);
-      // cars intentionally not loaded from KV — always use DEFAULT_CARS
+      if (data.cars) setCars(data.cars as typeof DEFAULT_CARS);
       if (data.houseInfo) setHouseInfo(data.houseInfo as typeof DEFAULT_HOUSE);
       if (data.claims) setClaims(data.claims as Record<string, Claim[]>);
       if (data.paid) {
