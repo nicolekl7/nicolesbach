@@ -338,7 +338,7 @@ export default function BachelorettePage() {
       if (data.themes) setThemes(data.themes as Theme[]);
       if (data.sections) setSections(data.sections as Section[]);
       if (data.itinerary) setItinerary(data.itinerary as ItinDay[]);
-      if (data.cars) setCars(data.cars as typeof DEFAULT_CARS);
+      // cars intentionally not loaded from KV — always use DEFAULT_CARS
       if (data.houseInfo) setHouseInfo(data.houseInfo as typeof DEFAULT_HOUSE);
       if (data.claims) setClaims(data.claims as Record<string, Claim[]>);
       if (data.paid) {
