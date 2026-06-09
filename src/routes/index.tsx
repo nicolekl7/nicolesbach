@@ -38,9 +38,14 @@ const NAMES = [
 type Name = (typeof NAMES)[number];
 const ADMIN: Name = "Sabrina";
 
-type PaidMap = Record<Name, Record<string, boolean>>;
-const ALL_PAID_FALSE = Object.fromEntries(
-  NAMES.map((n) => [n, {} as Record<string, boolean>])
+type PayStatus = "paid" | "owed" | "not-due";
+type PaidMap = Record<Name, Record<string, PayStatus>>;
+
+const INITIAL_PAID: PaidMap = Object.fromEntries(
+  NAMES.map((n) => {
+    const house = n === "Taylor" ? "owed" : "paid";
+    return [n, { "House": house, "Boat — Octolounge Kraken": "not-due" }];
+  })
 ) as PaidMap;
 
 type Claim = { name: Name; note?: string };
@@ -245,7 +250,6 @@ type Expense = {
   perPerson: number;
   splitAmong: Name[];
   note?: string;
-  dueDate?: string; // YYYY-MM-DD
 };
 
 const INITIAL_EXPENSES: Expense[] = [
@@ -267,7 +271,6 @@ const INITIAL_EXPENSES: Expense[] = [
     perPerson: 80,
     splitAmong: [...NAMES],
     note: "$100 deposit paid 4/7. Split 10 ways.",
-    dueDate: "2099-01-01",
   },
 ];
 
@@ -316,7 +319,7 @@ export default function BachelorettePage() {
   const [addItemCategory, setAddItemCategory] = useState<"Bar" | "Beach" | "Kitchen" | "Home" | "Other">("Other");
   const [addItemQty, setAddItemQty] = useState(1);
   const [addItemNote, setAddItemNote] = useState("");
-  const [paid, setPaid] = useState<PaidMap>(ALL_PAID_FALSE);
+  const [paid, setPaid] = useState<PaidMap>(INITIAL_PAID);
   const [expenses, setExpenses] = useState<Expense[]>(INITIAL_EXPENSES);
 
   // Admin state
@@ -342,7 +345,13 @@ export default function BachelorettePage() {
       if (data.cars) setCars(data.cars as typeof DEFAULT_CARS);
       if (data.houseInfo) setHouseInfo(data.houseInfo as typeof DEFAULT_HOUSE);
       if (data.claims) setClaims(data.claims as Record<string, Claim[]>);
-      if (data.paid) setPaid(data.paid as PaidMap);
+      if (data.paid) {
+        const loaded = data.paid as PaidMap;
+        const merged = Object.fromEntries(
+          NAMES.map((n) => [n, { ...INITIAL_PAID[n], ...loaded[n] }])
+        ) as PaidMap;
+        setPaid(merged);
+      }
       if (data.expenses) setExpenses(data.expenses as Expense[]);
       if (data.activitySignups) setActivitySignups(data.activitySignups as Record<string, Name[]>);
     }).catch(() => {});
@@ -388,7 +397,10 @@ export default function BachelorettePage() {
   };
 
   const togglePaid = (n: Name, label: string) => {
-    const nextPaid = { ...paid, [n]: { ...paid[n], [label]: !paid[n]?.[label] } };
+    const cycle: PayStatus[] = ["not-due", "owed", "paid"];
+    const current: PayStatus = paid[n]?.[label] ?? "owed";
+    const next = cycle[(cycle.indexOf(current) + 1) % cycle.length];
+    const nextPaid = { ...paid, [n]: { ...paid[n], [label]: next } };
     setPaid(nextPaid);
     saveContent({
       data: {
@@ -1697,28 +1709,18 @@ function DetailsTab({
             </h3>
             <ul className="mt-3 space-y-2">
               {userExpenses.map((e) => {
-                const hasPaid = !!paid[sg]?.[e.label];
-                const notDueYet = e.dueDate
-                  ? new Date(e.dueDate + "T00:00:00") > (() => { const t = new Date(); t.setHours(0,0,0,0); return t; })()
-                  : false;
+                const status: PayStatus = paid[sg]?.[e.label] ?? "owed";
                 return (
                   <li key={e.label} className="flex items-center justify-between text-sm">
                     <span className="text-foreground">{e.label}</span>
-                    {notDueYet ? (
-                      <span className="rounded-full border border-amber-700/40 bg-amber-900/20 px-3 py-1 text-xs font-medium uppercase tracking-wider text-amber-400">
-                        Not due yet
-                      </span>
-                    ) : (
-                      <span
-                        className={
-                          "rounded-full border px-3 py-1 text-xs font-medium uppercase tracking-wider " +
-                          (hasPaid
-                            ? "border-green-700/40 bg-green-900/20 text-green-400"
-                            : "border-border bg-background/30 text-muted-foreground")
-                        }
-                      >
-                        {hasPaid ? "Paid" : "Not paid"}
-                      </span>
+                    {status === "not-due" && (
+                      <span className="rounded-full border border-amber-700/40 bg-amber-900/20 px-3 py-1 text-xs font-medium uppercase tracking-wider text-amber-400">Not due yet</span>
+                    )}
+                    {status === "paid" && (
+                      <span className="rounded-full border border-green-700/40 bg-green-900/20 px-3 py-1 text-xs font-medium uppercase tracking-wider text-green-400">Paid</span>
+                    )}
+                    {status === "owed" && (
+                      <span className="rounded-full border border-border bg-background/30 px-3 py-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">Owed</span>
                     )}
                   </li>
                 );
@@ -2183,15 +2185,6 @@ function SpendTab({
   const [newSplit, setNewSplit] = useState<Name[]>([...NAMES]);
   const [editingLabel, setEditingLabel] = useState<string | null>(null);
   const [editFields, setEditFields] = useState<Partial<Expense>>({});
-  const [newDueDate, setNewDueDate] = useState("");
-
-  const checkIsNotDueYet = (dateStr?: string) => {
-    if (!dateStr) return false;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const due = new Date(dateStr + "T00:00:00");
-    return due > today;
-  };
 
   const totalRequired = NAMES.reduce(
     (sum, n) => sum + expenses.filter((e) => e.splitAmong.includes(n)).length,
@@ -2222,7 +2215,6 @@ function SpendTab({
         payer: newPayer,
         perPerson: Math.round((newTotal / newSplit.length) * 100) / 100,
         splitAmong: newSplit,
-        ...(newDueDate ? { dueDate: newDueDate } : {}),
       },
     ]);
     setAdding(false);
@@ -2305,37 +2297,35 @@ function SpendTab({
                         {n} {isMe && <span className="text-[var(--gold)]">(you)</span>}
                       </td>
                       {expenses.map((e) => {
-                        const inSplit = e.splitAmong.includes(n);
-                        const hasPaid = !!paid[n]?.[e.label];
+                        const inSplit = (e.splitAmong ?? []).includes(n);
+                        const status: PayStatus = paid[n]?.[e.label] ?? "owed";
                         if (!inSplit) {
                           return (
-                            <td
-                              key={e.label}
-                              className="border-b border-border px-2 py-2 text-center text-muted-foreground/40"
-                            >
-                              —
-                            </td>
+                            <td key={e.label} className="border-b border-border px-2 py-2 text-center text-muted-foreground/40">—</td>
                           );
                         }
                         return (
-                          <td
-                            key={e.label}
-                            className="border-b border-border px-2 py-2 text-center"
-                          >
-                            {checkIsNotDueYet(e.dueDate) && !isAdmin ? (
-                              <span className="text-[10px] text-amber-400">Not due yet</span>
-                            ) : (
+                          <td key={e.label} className="border-b border-border px-2 py-2 text-center">
+                            {isAdmin ? (
                               <button
                                 onClick={() => onToggle(n, e.label)}
                                 className={`inline-flex h-6 w-6 cursor-pointer items-center justify-center rounded border text-xs transition hover:border-[var(--gold)] ${
-                                  hasPaid
-                                    ? "border-green-700/50 bg-green-900/30 text-green-400"
-                                    : "border-border bg-background/30 text-muted-foreground"
+                                  status === "paid" ? "border-green-700/50 bg-green-900/30 text-green-400" :
+                                  status === "not-due" ? "border-amber-700/50 bg-amber-900/20 text-amber-400" :
+                                  "border-border bg-background/30 text-muted-foreground"
                                 }`}
-                                aria-label={hasPaid ? "Paid" : "Not paid"}
+                                title={status}
                               >
-                                {hasPaid ? "✓" : ""}
+                                {status === "paid" ? "✓" : status === "not-due" ? "–" : ""}
                               </button>
+                            ) : (
+                              <span className={`text-[10px] font-medium ${
+                                status === "paid" ? "text-green-400" :
+                                status === "not-due" ? "text-amber-400" :
+                                "text-muted-foreground"
+                              }`}>
+                                {status === "paid" ? "✓" : status === "not-due" ? "–" : "·"}
+                              </span>
                             )}
                           </td>
                         );
@@ -2360,33 +2350,32 @@ function SpendTab({
                   </div>
                   <ul className="mt-2 space-y-1.5">
                     {userExpenses.map((e) => {
-                      const hasPaid = !!paid[n]?.[e.label];
+                      const status: PayStatus = paid[n]?.[e.label] ?? "owed";
                       return (
-                        <li
-                          key={e.label}
-                          className="flex items-center justify-between text-sm"
-                        >
+                        <li key={e.label} className="flex items-center justify-between text-sm">
                           <span className="text-muted-foreground">
                             {e.label}
-                            <span className="ml-2 text-xs tabular-nums text-[var(--gold-soft)]">
-                              ${e.perPerson}
-                            </span>
+                            <span className="ml-2 text-xs tabular-nums text-[var(--gold-soft)]">${e.perPerson}</span>
                           </span>
-                          {checkIsNotDueYet(e.dueDate) && !isAdmin ? (
-                            <span className="rounded-full border border-amber-700/40 bg-amber-900/20 px-3 py-1 text-xs font-medium uppercase tracking-wider text-amber-400">
-                              Not due yet
-                            </span>
-                          ) : (
+                          {isAdmin ? (
                             <button
                               onClick={() => onToggle(n, e.label)}
                               className={`cursor-pointer rounded-full border px-3 py-1 text-xs font-medium uppercase tracking-wider transition hover:border-[var(--gold)] ${
-                                hasPaid
-                                  ? "border-green-700/40 bg-green-900/20 text-green-400"
-                                  : "border-border bg-background/30 text-muted-foreground"
+                                status === "paid" ? "border-green-700/40 bg-green-900/20 text-green-400" :
+                                status === "not-due" ? "border-amber-700/40 bg-amber-900/20 text-amber-400" :
+                                "border-border bg-background/30 text-muted-foreground"
                               }`}
                             >
-                              {hasPaid ? "Paid" : "Not paid"}
+                              {status === "paid" ? "Paid" : status === "not-due" ? "Not due yet" : "Owed"}
                             </button>
+                          ) : (
+                            <span className={`rounded-full border px-3 py-1 text-xs font-medium uppercase tracking-wider ${
+                              status === "paid" ? "border-green-700/40 bg-green-900/20 text-green-400" :
+                              status === "not-due" ? "border-amber-700/40 bg-amber-900/20 text-amber-400" :
+                              "border-border bg-background/30 text-muted-foreground"
+                            }`}>
+                              {status === "paid" ? "Paid" : status === "not-due" ? "Not due yet" : "Owed"}
+                            </span>
                           )}
                         </li>
                       );
@@ -2453,17 +2442,6 @@ function SpendTab({
                     <option key={n} value={n}>{n}</option>
                   ))}
                 </select>
-              </div>
-              <div>
-                <label className="mb-1 block text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-                  Due date (optional)
-                </label>
-                <input
-                  type="date"
-                  value={newDueDate}
-                  onChange={(e) => setNewDueDate(e.target.value)}
-                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-[var(--gold)]"
-                />
               </div>
               <div>
                 <label className="mb-1 block text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
@@ -2550,11 +2528,6 @@ function SpendTab({
                           {NAMES.map((n) => <option key={n} value={n}>{n}</option>)}
                         </select>
                       </div>
-                      <div>
-                        <label className="mb-1 block text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Due date</label>
-                        <input type="date" value={ef.dueDate ?? e.dueDate ?? ""} onChange={(ev) => setEditFields({ ...ef, dueDate: ev.target.value || undefined })}
-                          className="w-full rounded-md border border-border bg-background px-3 py-1.5 text-sm text-foreground outline-none focus:border-[var(--gold)]" />
-                      </div>
                       <div className="sm:col-span-2 text-xs text-muted-foreground">Per person: ${editPerPerson.toFixed(2)}</div>
                     </div>
                     <div>
@@ -2591,7 +2564,6 @@ function SpendTab({
                       <span className="text-foreground">{e.label}</span>
                       <span className="ml-2 text-xs text-muted-foreground">
                         ${e.total} · ${e.perPerson}/person · {e.splitAmong.length} people · paid by {e.payer}
-                        {e.dueDate && <span className="ml-1">· due {new Date(e.dueDate + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>}
                       </span>
                     </div>
                     <div className="flex shrink-0 gap-3">
