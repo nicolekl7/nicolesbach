@@ -342,9 +342,15 @@ export default function BachelorettePage() {
       if (data.houseInfo) setHouseInfo(data.houseInfo as typeof DEFAULT_HOUSE);
       if (data.claims) setClaims(data.claims as Record<string, Claim[]>);
       if (data.paid) {
-        const loaded = data.paid as PaidMap;
+        const loaded = data.paid as Record<string, Record<string, unknown>>;
+        const valid: PayStatus[] = ["paid", "owed", "not-due"];
         const merged = Object.fromEntries(
-          NAMES.map((n) => [n, { ...INITIAL_PAID[n], ...loaded[n] }])
+          NAMES.map((n) => {
+            const kvEntries = Object.fromEntries(
+              Object.entries(loaded[n] ?? {}).filter(([, v]) => valid.includes(v as PayStatus))
+            ) as Record<string, PayStatus>;
+            return [n, { ...INITIAL_PAID[n], ...kvEntries }];
+          })
         ) as PaidMap;
         setPaid(merged);
       }
