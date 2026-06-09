@@ -854,7 +854,7 @@ export default function BachelorettePage() {
 
             {sections.map((section, sIdx) => (
               <section key={section.id} className="mb-12">
-                <div className="mb-5 flex items-center gap-3">
+                <div className="mb-5 flex items-center gap-3 rounded-lg bg-[#fef9dd] px-4 py-3">
                   {adminMode ? (
                     <input
                       value={section.title}
