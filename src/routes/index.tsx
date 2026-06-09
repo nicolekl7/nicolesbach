@@ -1661,11 +1661,15 @@ function DetailsTab({
             <h3 className="font-display text-2xl text-foreground">
               <em className="text-[var(--gold)]">Your ride</em>
             </h3>
-            <p className="mt-3 text-sm font-medium text-foreground">{car.name}{car.driver && <span className="ml-2 text-xs font-normal text-muted-foreground">· {car.driver} driving</span>}</p>
+            <p className="mt-3 text-sm font-medium text-foreground">{car.name}{car.driver === sg ? <span className="ml-2 text-xs font-normal text-[var(--gold-soft)]">· you're driving</span> : car.driver ? <span className="ml-2 text-xs font-normal text-muted-foreground">· {car.driver} driving</span> : null}</p>
             <p className="text-xs text-muted-foreground">
               Leave {car.leave} · Arrive {car.arrive}
             </p>
-            <p className="mt-2 text-xs text-muted-foreground">With {car.people}</p>
+            {(() => {
+              const others = car.people.split(",").map((p) => p.trim()).filter((p) => p !== sg && !p.startsWith(sg));
+              const label = car.driver === sg ? "Your car has" : "With";
+              return others.length > 0 ? <p className="mt-2 text-xs text-muted-foreground">{label} {others.join(", ")}</p> : null;
+            })()}
           </section>
         )}
 
