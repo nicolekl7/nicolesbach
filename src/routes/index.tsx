@@ -184,10 +184,9 @@ const DEFAULT_ITINERARY: ItinDay[] = [
 ];
 
 const DEFAULT_CARS: { name: string; people: string; leave: string; arrive: string; driver?: string }[] = [
-  { name: "Sabrina's car", people: "Sabrina, Phoebe, Jane", leave: "9:00 AM", arrive: "2:30 PM", driver: "Sabrina" },
+  { name: "Sabrina's car", people: "Sabrina, Phoebe, Jane, Charlene", leave: "9:00 AM", arrive: "2:30 PM", driver: "Sabrina" },
   { name: "Lara's car", people: "Lara, Jess, Nicole, p/u Casey", leave: "9:30 AM", arrive: "4:00 PM", driver: "Lara" },
   { name: "Isabel's car", people: "Isabel, Kait, Taylor", leave: "10:00 AM", arrive: "4:00 PM", driver: "Isabel" },
-  { name: "Charlene's car", people: "Charlene", leave: "1:00 PM", arrive: "4:00 PM" },
 ];
 
 const DEFAULT_HOUSE = {
