@@ -853,8 +853,8 @@ export default function BachelorettePage() {
             </div>
 
             {sections.map((section, sIdx) => (
-              <section key={section.id} className="mb-12">
-                <div className="mb-5 flex items-center gap-3 rounded-lg bg-[#fef9dd] px-4 py-3">
+              <section key={section.id} className="mb-8 rounded-lg border border-border bg-card overflow-hidden">
+                <div className="flex items-center gap-3 bg-[#fef9dd] px-5 py-4">
                   {adminMode ? (
                     <input
                       value={section.title}
@@ -888,7 +888,7 @@ export default function BachelorettePage() {
                     </button>
                   )}
                 </div>
-                <ul className="divide-y divide-border rounded-lg border border-border bg-card">
+                <ul className="divide-y divide-border">
                   {section.items.map((item, iIdx) => (
                     <ItemRow
                       key={item.id}
