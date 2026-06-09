@@ -1598,7 +1598,7 @@ function DetailsTab({
   if (activeGirl) {
     const sg = activeGirl;
     const car = cars.find((c) =>
-      c.people.split(",").map((p) => p.trim()).some((p) => p === sg || p.startsWith(sg)) ||
+      (c.people ?? "").split(",").map((p) => p.trim()).some((p) => p === sg || p.startsWith(sg)) ||
       c.driver === sg
     );
     const items: { label: string; note?: string }[] = [];
@@ -1613,7 +1613,7 @@ function DetailsTab({
     // Re-derive items from claims directly, grouped by label with count
     const itemCounts: Record<string, { count: number; note?: string }> = {};
     for (const [itemId, claimList] of Object.entries(claims)) {
-      for (const c of claimList) {
+      for (const c of (claimList ?? [])) {
         if (c.name === sg) {
           if (!itemCounts[itemId]) itemCounts[itemId] = { count: 0, note: c.note };
           itemCounts[itemId].count += 1;
@@ -1628,7 +1628,7 @@ function DetailsTab({
     }));
     const defaultAllItems = DEFAULT_SECTIONS.flatMap((s) => s.items);
     const byoItems = defaultAllItems.filter((i) => i.qty === "byo");
-    const userExpenses = expenses.filter((e) => e.splitAmong.includes(sg));
+    const userExpenses = expenses.filter((e) => (e.splitAmong ?? []).includes(sg));
     const earlyLeavers = ["Phoebe", "Taylor", "Casey"];
     const leavesEarly = earlyLeavers.includes(sg);
 
