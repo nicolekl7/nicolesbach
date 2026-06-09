@@ -1592,7 +1592,7 @@ function DetailsTab({
 }) {
   const [selectedGirl, setSelectedGirl] = useState<Name | null>(null);
   const lockedToUser = user !== "" && user !== ADMIN;
-  const activeGirl = lockedToUser ? (user as Name) : selectedGirl;
+  const activeGirl = lockedToUser ? (user as Name) : (selectedGirl ?? (user !== "" ? user as Name : null));
   const adminMode = !!setCars;
 
   if (activeGirl) {
