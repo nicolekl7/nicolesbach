@@ -801,7 +801,7 @@ export default function BachelorettePage() {
         <div className="mx-auto max-w-3xl text-center">
           <div className="mx-auto overflow-hidden rounded-2xl bg-card">
             <img
-              src="https://lh3.googleusercontent.com/d/1quHIgGSWxdqieiHmnBQq3ljZnUYUIWIA"
+              src="https://lh3.googleusercontent.com/d/1jUnsS0gFNlXU-D_JK0KPBWJCP0aic0Dd"
               alt="Nicole's Bachelorette"
               className="w-full object-cover"
             />
