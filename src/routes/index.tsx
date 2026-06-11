@@ -789,11 +789,11 @@ export default function BachelorettePage() {
           <TabBtn active={tab === "itinerary"} onClick={() => setTab("itinerary")}>
             Itinerary
           </TabBtn>
-          <TabBtn active={tab === "signup"} onClick={() => setTab("signup")}>
-            Item signup
-          </TabBtn>
           <TabBtn active={tab === "vibes"} onClick={() => setTab("vibes")}>
             Vibes
+          </TabBtn>
+          <TabBtn active={tab === "signup"} onClick={() => setTab("signup")}>
+            Item signup
           </TabBtn>
           {adminMode && (
             <TabBtn active={tab === "payments"} onClick={() => setTab("payments")}>
@@ -818,6 +818,7 @@ export default function BachelorettePage() {
             setItinerary={adminMode ? setItineraryA : undefined}
             sections={sections}
             onGoToVibes={() => setTab("vibes")}
+            onGoToSignup={() => setTab("signup")}
             activitySignups={activitySignups}
             onToggleActivity={toggleActivity}
           />
@@ -1586,6 +1587,7 @@ function DetailsTab({
   setItinerary,
   sections,
   onGoToVibes,
+  onGoToSignup,
   activitySignups,
   onToggleActivity,
 }: {
@@ -1601,6 +1603,7 @@ function DetailsTab({
   setItinerary?: (it: ItinDay[]) => void;
   sections: Section[];
   onGoToVibes?: () => void;
+  onGoToSignup?: () => void;
   activitySignups?: Record<string, Name[]>;
   onToggleActivity?: (key: string, name: Name) => void;
 }) {
@@ -1679,9 +1682,19 @@ function DetailsTab({
         )}
 
         <section className="rounded-lg border border-border bg-card p-6">
-          <h3 className="font-display text-2xl text-foreground">
-            <em className="text-[var(--gold)]">You're bringing</em>
-          </h3>
+          <div className="flex items-baseline justify-between gap-3">
+            <h3 className="font-display text-2xl text-foreground">
+              <em className="text-[var(--gold)]">You're bringing</em>
+            </h3>
+            {onGoToSignup && (
+              <button
+                onClick={onGoToSignup}
+                className="text-xs uppercase tracking-wider text-[var(--gold)] hover:opacity-70"
+              >
+                Item sign-up →
+              </button>
+            )}
+          </div>
           {allClaimedItems.length === 0 && byoItems.length === 0 ? (
             <p className="mt-3 text-sm italic text-muted-foreground">Nothing signed up yet</p>
           ) : (
