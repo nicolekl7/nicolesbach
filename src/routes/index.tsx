@@ -143,10 +143,11 @@ const INITIAL_CLAIMS: Record<string, Claim[]> = {
   "house-steamer": [{ name: "Sabrina" }],
 };
 
+type ItinBlock = { time: string; what: string; visibleTo?: string[] };
 type ItinDay = {
   date: string;
   label: string;
-  blocks: { time: string; what: string }[];
+  blocks: ItinBlock[];
 };
 
 const DEFAULT_ITINERARY: ItinDay[] = [
@@ -154,6 +155,8 @@ const DEFAULT_ITINERARY: ItinDay[] = [
     date: "Thu, Jul 30",
     label: "Thursday",
     blocks: [
+      { time: "12:00 PM", what: "Pickup @ PHL", visibleTo: ["Casey", "Isabel", "Kait", "Taylor"] },
+      { time: "12:00 PM", what: "Pickup @ PHL", visibleTo: ["Char", "Sabrina", "Phoebe", "Jane"] },
       { time: "4:00 PM", what: "Official check in" },
       { time: "5:00 PM", what: "Decorating" },
       { time: "7:00 PM", what: "Sunset theme · dinner out" },
@@ -2210,7 +2213,7 @@ function ItineraryTab({
             )}
           </div>
           <ul className="mt-4 divide-y divide-border">
-            {day.blocks.map((b, bIdx) => (
+            {day.blocks.filter((b) => !b.visibleTo || adminMode || (user && b.visibleTo.includes(user))).map((b, bIdx) => (
               <li
                 key={bIdx}
                 draggable={adminMode}
