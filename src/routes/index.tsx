@@ -1647,7 +1647,7 @@ function DetailsTab({
 
     return (
       <div className="space-y-8">
-        {!lockedToUser && (
+        {!lockedToUser && activeGirl !== user && (
           <button
             onClick={() => setSelectedGirl(null)}
             className="inline-flex items-center gap-1.5 rounded-md border border-border bg-[#fef9dd] px-3 py-2 text-xs uppercase tracking-wider text-foreground transition hover:border-[var(--gold)] hover:text-[var(--gold)]"
