@@ -2375,6 +2375,37 @@ function ItineraryTab({
           + Add day
         </button>
       )}
+      {user && cars && (
+        <section className="rounded-lg border border-border bg-card overflow-hidden">
+          <div className="bg-[#fef9dd] px-5 py-4">
+            <h2 className="font-display text-3xl text-foreground sm:text-4xl">
+              <em className="text-[var(--gold)]">Cars</em>
+            </h2>
+          </div>
+          <div className="divide-y divide-border">
+            {cars.map((car) => {
+              const segments = car.people.split(",").map((p) => p.trim().replace(/^and\s+/i, ""));
+              const pickupNames = segments.filter((p) => /picking up/i.test(p)).map((p) => p.replace(/^picking up\s+/i, "").trim());
+              const regularPassengers = segments.filter((p) => !/picking up/i.test(p) && p !== car.driver);
+              const isMycar = segments.some((p) => p === user || p.includes(user)) || car.driver === user;
+              return (
+                <div key={car.name} className={`px-5 py-4 ${isMycar ? "bg-[var(--gold)]/5" : ""}`}>
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-medium text-foreground">{car.name}</p>
+                    {isMycar && <span className="rounded-full bg-[var(--gold)]/20 px-2 py-0.5 text-[10px] uppercase tracking-wider text-[var(--gold)]">your car</span>}
+                  </div>
+                  <p className="text-xs text-muted-foreground">Leave {car.leave} · Arrive {car.arrive}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {car.driver} driving
+                    {regularPassengers.length > 0 ? ` · ${regularPassengers.join(", ")}` : ""}
+                    {pickupNames.length > 0 ? ` · picking up ${pickupNames.join(", ")}` : ""}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
     </div>
   );
 }
