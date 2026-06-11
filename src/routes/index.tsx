@@ -42,7 +42,7 @@ type PayStatus = "paid" | "owed" | "not-due";
 type PaidMap = Record<Name, Record<string, PayStatus>>;
 
 const INITIAL_PAID: PaidMap = Object.fromEntries(
-  NAMES.map((n) => [n, { "House": "paid", "Boat — Octolounge Kraken": "not-due" }])
+  NAMES.map((n) => [n, { "House": "paid", "Boat — $85": "not-due" }])
 ) as PaidMap;
 
 type Claim = { name: Name; note?: string };
@@ -66,9 +66,7 @@ const DEFAULT_SECTIONS: Section[] = [
       { id: "bar-glasses", label: "Cute glasses", qty: 11 },
       { id: "bar-alcohol", label: "Alcohol", qty: "unlimited" },
       { id: "bar-mixers", label: "Mixers & syrups", qty: "unlimited" },
-      { id: "bar-ice", label: "Bag ice", qty: "unlimited" },
-      { id: "bar-napkins", label: "Cocktail napkins", qty: 1 },
-      { id: "bar-opener", label: "Bottle opener / wine key", qty: 1 },
+      { id: "bar-opener", label: "Wine opener", qty: 1 },
     ],
   },
   {
@@ -99,8 +97,6 @@ const DEFAULT_SECTIONS: Section[] = [
       { id: "house-camera", label: "Disposable camera", qty: 1 },
       { id: "house-games", label: "Card / drinking games", qty: "unlimited" },
       { id: "house-firstaid", label: "First aid kit", qty: 1 },
-      { id: "house-lighter", label: "Lighter", qty: 1 },
-      { id: "house-extcord", label: "Extension cord", qty: 1 },
     ],
   },
   {
@@ -113,7 +109,6 @@ const DEFAULT_SECTIONS: Section[] = [
       { id: "kit-dish", label: "Dish soap & sponge", qty: 1 },
       { id: "kit-snacks", label: "Snacks", qty: "unlimited" },
       { id: "kit-cond", label: "Condiments & cooking basics", qty: "unlimited" },
-      { id: "kit-ziploc", label: "Ziploc bags / foil", qty: 1 },
     ],
   },
 ];
