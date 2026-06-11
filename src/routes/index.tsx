@@ -1778,7 +1778,7 @@ function DetailsTab({
   if (activeGirl) {
     const sg = activeGirl;
     const car = cars.find((c) =>
-      (c.people ?? "").split(",").map((p) => p.trim()).some((p) => p === sg || p.startsWith(sg)) ||
+      (c.people ?? "").split(",").map((p) => p.trim()).some((p) => p === sg || p.startsWith(sg) || p.includes(sg)) ||
       c.driver === sg
     );
     const items: { label: string; note?: string }[] = [];
