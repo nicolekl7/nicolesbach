@@ -192,10 +192,10 @@ const DEFAULT_ITINERARY: ItinDay[] = [
   },
 ];
 
-const DEFAULT_CARS: { name: string; people: string; leave: string; arrive: string; driver?: string; pickups?: { name: string; location: string; day: string; time: string }[] }[] = [
-  { name: "Sabrina's car", people: "Sabrina, Phoebe, Jane, and picking up Char", leave: "9:00 AM", arrive: "2:30 PM", driver: "Sabrina", pickups: [{ name: "Char", location: "PHL", day: "Thu, Jul 30", time: "TBD" }] },
+const DEFAULT_CARS: { name: string; people: string; leave: string; arrive: string; driver?: string }[] = [
+  { name: "Sabrina's car", people: "Sabrina, Phoebe, Jane, and picking up Char", leave: "9:00 AM", arrive: "2:30 PM", driver: "Sabrina" },
   { name: "Lara's car", people: "Lara, Jess, and Nicole", leave: "9:00 AM", arrive: "3:00 PM", driver: "Lara" },
-  { name: "Isabel's car", people: "Isabel, Kait, Taylor, and picking up Casey", leave: "9:00 AM", arrive: "3:30 PM", driver: "Isabel", pickups: [{ name: "Casey", location: "PHL", day: "Thu, Jul 30", time: "TBD" }] },
+  { name: "Isabel's car", people: "Isabel, Kait, Taylor, and picking up Casey", leave: "9:00 AM", arrive: "3:30 PM", driver: "Isabel" },
 ];
 
 const DEFAULT_HOUSE = {
@@ -881,7 +881,6 @@ export default function BachelorettePage() {
             user={user}
             activitySignups={activitySignups}
             onToggleActivity={toggleActivity}
-            cars={cars}
           />
         )}
         {tab === "signup" && (
@@ -1839,25 +1838,6 @@ function DetailsTab({
               const label = car.driver === sg ? "Your car has" : "With";
               return others.length > 0 ? <p className="mt-2 text-xs text-muted-foreground">{label} {others.join(", ")}</p> : null;
             })()}
-            {(() => {
-              const myPickup = (car.pickups ?? []).find((p) => p.name === sg);
-              if (!myPickup) return null;
-              return (
-                <div className="mt-3 rounded-md border border-[var(--gold)]/30 bg-[#fef9dd] px-3 py-2">
-                  <p className="text-xs font-medium text-[var(--gold)]">📍 Pickup: {myPickup.location}</p>
-                  <p className="text-xs text-muted-foreground">{myPickup.day}{myPickup.time !== "TBD" ? ` · ${myPickup.time}` : " · time TBD"}</p>
-                </div>
-              );
-            })()}
-            {(() => {
-              const otherPickups = (car.pickups ?? []).filter((p) => p.name !== sg);
-              if (otherPickups.length === 0 || car.driver !== sg) return null;
-              return (
-                <p className="mt-2 text-xs text-muted-foreground">
-                  Picking up: {otherPickups.map((p) => `${p.name} @ ${p.location}`).join(", ")}
-                </p>
-              );
-            })()}
           </section>
         )}
 
@@ -2164,7 +2144,6 @@ function ItineraryTab({
   user,
   activitySignups,
   onToggleActivity,
-  cars,
 }: {
   itinerary: ItinDay[];
   setItinerary?: (it: ItinDay[]) => void;
@@ -2172,7 +2151,6 @@ function ItineraryTab({
   user?: Name | "";
   activitySignups?: Record<string, Name[]>;
   onToggleActivity?: (key: string, name: Name) => void;
-  cars?: typeof DEFAULT_CARS;
 }) {
   const adminMode = !!setItinerary;
   const dragBlock = useRef<{ dIdx: number; bIdx: number } | null>(null);
@@ -2342,21 +2320,6 @@ function ItineraryTab({
               + Add block
             </button>
           )}
-          {(() => {
-            if (!user || !cars) return null;
-            const myCar = cars.find((c) =>
-              (c.people ?? "").split(",").map((p) => p.trim()).some((p) => p === user || p.startsWith(user)) ||
-              c.driver === user
-            );
-            const myPickup = (myCar?.pickups ?? []).find((p) => p.name === user && p.day === day.date);
-            if (!myPickup) return null;
-            return (
-              <div className="mt-3 rounded-md border border-[var(--gold)]/30 bg-[#fef9dd] px-3 py-2">
-                <p className="text-xs font-medium text-[var(--gold)]">📍 Your pickup: {myPickup.location}</p>
-                <p className="text-xs text-muted-foreground">{myPickup.time !== "TBD" ? myPickup.time : "Time TBD — coordinate with your driver"}</p>
-              </div>
-            );
-          })()}
         </section>
       ))}
       {adminMode && setItinerary && (
