@@ -1835,9 +1835,9 @@ function DetailsTab({
               Leave by {car.leave} · Estimated Arrival {car.arrive}
             </p>
             {(() => {
-              const segments = car.people.split(",").map((p) => p.trim());
-              const pickupNames = segments.filter((p) => /picking up/i.test(p)).map((p) => p.replace(/^and\s+picking up\s+/i, "").replace(/^picking up\s+/i, "").trim());
-              const regularNames = segments.filter((p) => !/picking up/i.test(p) && p !== car.driver && !p.includes(sg));
+              const segments = car.people.split(",").map((p) => p.trim().replace(/^and\s+/i, ""));
+              const pickupNames = segments.filter((p) => /picking up/i.test(p)).map((p) => p.replace(/^picking up\s+/i, "").trim());
+              const regularNames = segments.filter((p) => !/picking up/i.test(p) && p !== car.driver && p !== sg);
               const pickupsForSentence = pickupNames.filter((n) => n !== sg);
               const driver = car.driver ?? "";
               if (car.driver === sg) {
