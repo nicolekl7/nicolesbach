@@ -1663,68 +1663,34 @@ function DetailsTab({
           <h2 className="font-display inline-block rounded-2xl bg-[#fef9dd] px-8 py-4 text-4xl text-[var(--gold)] sm:text-5xl">{sg}</h2>
         </div>
 
-        {car && (
-          <section className="rounded-lg border border-border bg-card p-6">
-            <h3 className="font-display text-2xl text-foreground">
-              <em className="text-[var(--gold)]">Your ride</em>
-            </h3>
-            {(() => {
-              const driver = car.driver ?? "";
-              const pickups = car.pickups ?? [];
-              const myPickup = pickups.find((p) => p.name === sg);
-              const segments = car.people.split(",").map((p) => p.trim().replace(/^and\s+/i, ""));
-              const pickupNames = pickups.map((p) => p.name);
-              const regularPassengers = segments.filter((p) => !/picking up/i.test(p) && p !== driver);
-
-              // helper: join names naturally "A and B" or "A, B and C"
-              const joinNames = (names: string[]) => {
-                if (names.length === 0) return "";
-                if (names.length === 1) return names[0];
-                return names.slice(0, -1).join(", ") + " and " + names[names.length - 1];
-              };
-
-              // DRIVER
-              if (car.driver === sg) {
-                const others = regularPassengers.filter((p) => !p.includes(sg));
-                const sentence = pickupNames.length > 0
-                  ? `You are driving ${joinNames(others)} then picking up ${joinNames(pickupNames)} on the way`
-                  : `You are driving ${joinNames(others)}`;
-                return (
-                  <>
-                    <p className="mt-3 text-sm font-medium text-foreground">Your car</p>
-                    <p className="text-xs text-muted-foreground">Leave by {car.leave} · Estimated Arrival {car.arrive}</p>
-                    <p className="mt-2 text-xs text-muted-foreground">{sentence}</p>
-                  </>
-                );
-              }
-
-              // PICKUP PASSENGER
-              if (myPickup) {
-                const others = regularPassengers.filter((p) => !p.includes(sg));
-                return (
-                  <>
-                    <p className="mt-3 text-sm font-medium text-foreground">{car.name}</p>
-                    <p className="text-xs text-muted-foreground">Pick-up at {myPickup.time} · Estimated Arrival {car.arrive}</p>
-                    <p className="mt-2 text-xs text-muted-foreground">{driver} is driving {joinNames(others)} then picking you up on the way</p>
-                  </>
-                );
-              }
-
-              // REGULAR PASSENGER
-              const others = regularPassengers.filter((p) => !p.includes(sg));
-              const sentence = pickupNames.length > 0
-                ? `${driver} is driving you and ${joinNames(others)} then picking up ${joinNames(pickupNames)} on the way`
-                : `${driver} is driving you and ${joinNames(others)}`;
-              return (
-                <>
-                  <p className="mt-3 text-sm font-medium text-foreground">{car.name}</p>
-                  <p className="text-xs text-muted-foreground">Leave by {car.leave} · Estimated Arrival {car.arrive}</p>
-                  <p className="mt-2 text-xs text-muted-foreground">{sentence}</p>
-                </>
-              );
-            })()}
-          </section>
-        )}
+        {(() => {
+          type RideScript = { carName: string; line2: string; line3: string };
+          const RIDE_SCRIPTS: Record<string, RideScript> = {
+            Sabrina: { carName: "Your car", line2: "Leave by 9:00 AM · Estimated Arrival 2:30 PM", line3: "You are driving Phoebe and Jane then picking up Char on the way" },
+            Phoebe:  { carName: "Sabrina's car", line2: "Leave by 9:00 AM · Estimated Arrival 2:30 PM", line3: "Sabrina is driving you and Jane then picking up Char on the way" },
+            Jane:    { carName: "Sabrina's car", line2: "Leave by 9:00 AM · Estimated Arrival 2:30 PM", line3: "Sabrina is driving you and Phoebe then picking up Char on the way" },
+            Char:    { carName: "Sabrina's car", line2: "Pick-up at 1:00 PM (TBD) · Estimated Arrival 2:30 PM", line3: "Sabrina is driving Phoebe and Jane then picking you up on the way" },
+            Lara:    { carName: "Your car", line2: "Leave by 9:00 AM · Estimated Arrival 3:00 PM", line3: "You are driving Jess and Nicole" },
+            Jess:    { carName: "Lara's car", line2: "Leave by 9:00 AM · Estimated Arrival 3:00 PM", line3: "Lara is driving you and Nicole" },
+            Nicole:  { carName: "Lara's car", line2: "Leave by 9:00 AM · Estimated Arrival 3:00 PM", line3: "Lara is driving you and Jess" },
+            Isabel:  { carName: "Your car", line2: "Leave by 9:00 AM · Estimated Arrival 3:30 PM", line3: "You are driving Kait and Taylor then picking up Casey on the way" },
+            Kait:    { carName: "Isabel's car", line2: "Leave by 9:00 AM · Estimated Arrival 3:30 PM", line3: "Isabel is driving you and Taylor then picking up Casey on the way" },
+            Taylor:  { carName: "Isabel's car", line2: "Leave by 9:00 AM · Estimated Arrival 3:30 PM", line3: "Isabel is driving you and Kait then picking up Casey on the way" },
+            Casey:   { carName: "Isabel's car", line2: "Pick-up at 12:00 PM · Estimated Arrival 3:30 PM", line3: "Isabel is driving Kait and Taylor then picking you up on the way" },
+          };
+          const script = RIDE_SCRIPTS[sg];
+          if (!script) return null;
+          return (
+            <section className="rounded-lg border border-border bg-card p-6">
+              <h3 className="font-display text-2xl text-foreground">
+                <em className="text-[var(--gold)]">Your ride</em>
+              </h3>
+              <p className="mt-3 text-sm font-medium text-foreground">{script.carName}</p>
+              <p className="text-xs text-muted-foreground">{script.line2}</p>
+              <p className="mt-2 text-xs text-muted-foreground">{script.line3}</p>
+            </section>
+          );
+        })()}
 
         <section className="rounded-lg border border-border bg-card p-6">
           <div className="flex items-baseline justify-between gap-3">
