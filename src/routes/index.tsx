@@ -748,16 +748,12 @@ export default function BachelorettePage() {
       {/* Hero */}
       <header className="relative z-10 px-5 pt-12 pb-10 sm:pt-20 sm:pb-16">
         <div className="mx-auto max-w-3xl text-center">
-          <div className="mx-auto inline-block rounded-2xl bg-card px-10 py-8">
-            <div className="mx-auto mb-6 flex justify-center text-[var(--gold)]">
-              <MartiniGlass className="h-20 w-20 sm:h-24 sm:w-24" />
-            </div>
-            <p className="text-xs uppercase tracking-[0.3em] text-[var(--gold-soft)]">
-              Dewey Beach · July 2025
-            </p>
-            <h1 className="font-display mt-5 text-5xl leading-tight text-foreground sm:text-7xl">
-              Nicole's <em className="text-[var(--gold)]">Bachelorette</em>
-            </h1>
+          <div className="mx-auto overflow-hidden rounded-2xl bg-card">
+            <img
+              src="https://lh3.googleusercontent.com/d/1JpJOx-wMAUDQH4YwJUyadioxysujKrzm"
+              alt="Nicole's Bachelorette"
+              className="w-full object-cover"
+            />
           </div>
           {/* Name selector */}
           <div className={`mx-auto mt-6 inline-block rounded-xl bg-card px-6 py-4 transition ${user ? "ring-2 ring-[var(--gold)] ring-offset-2 ring-offset-card" : ""}`}>
