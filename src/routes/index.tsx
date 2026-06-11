@@ -904,7 +904,7 @@ export default function BachelorettePage() {
               </div>
             </div>
 
-            {sections.map((section, sIdx) => (
+            {sections.filter((s) => adminMode || s.items.length > 0).map((section, sIdx) => (
               <section key={section.id} className="mb-8 rounded-lg border border-border bg-card overflow-hidden">
                 <div className="flex items-center gap-3 bg-[#fef9dd] px-5 py-4">
                   {adminMode ? (
