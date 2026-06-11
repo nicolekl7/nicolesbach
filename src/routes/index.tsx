@@ -1799,11 +1799,13 @@ function DetailsTab({
       }
     }
     const allItems = sections.flatMap((s) => s.items);
-    const allClaimedItems = Object.entries(itemCounts).map(([itemId, { count, note }]) => ({
-      label: allItems.find((i) => i.id === itemId)?.label ?? itemId,
-      count,
-      note,
-    }));
+    const allClaimedItems = Object.entries(itemCounts)
+      .filter(([itemId]) => allItems.some((i) => i.id === itemId))
+      .map(([itemId, { count, note }]) => ({
+        label: allItems.find((i) => i.id === itemId)?.label ?? itemId,
+        count,
+        note,
+      }));
     const defaultAllItems = DEFAULT_SECTIONS.flatMap((s) => s.items);
     const byoItems = defaultAllItems.filter((i) => i.qty === "byo");
     const userExpenses = expenses.filter((e) => (e.splitAmong ?? []).includes(sg));
