@@ -1685,7 +1685,7 @@ function DetailsTab({
 
               // DRIVER
               if (car.driver === sg) {
-                const others = regularPassengers.filter((p) => p !== sg);
+                const others = regularPassengers.filter((p) => !p.includes(sg));
                 const sentence = pickupNames.length > 0
                   ? `You are driving ${joinNames(others)} then picking up ${joinNames(pickupNames)} on the way`
                   : `You are driving ${joinNames(others)}`;
@@ -1700,7 +1700,7 @@ function DetailsTab({
 
               // PICKUP PASSENGER
               if (myPickup) {
-                const others = regularPassengers.filter((p) => p !== sg);
+                const others = regularPassengers.filter((p) => !p.includes(sg));
                 return (
                   <>
                     <p className="mt-3 text-sm font-medium text-foreground">{car.name}</p>
@@ -1711,7 +1711,7 @@ function DetailsTab({
               }
 
               // REGULAR PASSENGER
-              const others = regularPassengers.filter((p) => p !== sg);
+              const others = regularPassengers.filter((p) => !p.includes(sg));
               const sentence = pickupNames.length > 0
                 ? `${driver} is driving you and ${joinNames(others)} then picking up ${joinNames(pickupNames)} on the way`
                 : `${driver} is driving you and ${joinNames(others)}`;
