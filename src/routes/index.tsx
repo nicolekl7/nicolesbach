@@ -192,10 +192,10 @@ const DEFAULT_ITINERARY: ItinDay[] = [
   },
 ];
 
-const DEFAULT_CARS: { name: string; people: string; leave: string; arrive: string; driver?: string; pickups?: { name: string; location: string; day: string; time: string }[] }[] = [
-  { name: "Sabrina's car", people: "Sabrina, Phoebe, Jane, and picking up Char", leave: "9:00 AM", arrive: "2:30 PM", driver: "Sabrina", pickups: [{ name: "Char", location: "PHL", day: "Thu, Jul 30", time: "TBD" }] },
+const DEFAULT_CARS: { name: string; people: string; leave: string; arrive: string; driver?: string; pickups?: { name: string; time: string }[] }[] = [
+  { name: "Sabrina's car", people: "Sabrina, Phoebe, Jane, and picking up Char", leave: "9:00 AM", arrive: "2:30 PM", driver: "Sabrina", pickups: [{ name: "Char", time: "1:00 PM (TBD)" }] },
   { name: "Lara's car", people: "Lara, Jess, and Nicole", leave: "9:00 AM", arrive: "3:00 PM", driver: "Lara" },
-  { name: "Isabel's car", people: "Isabel, Kait, Taylor, and picking up Casey", leave: "9:00 AM", arrive: "3:30 PM", driver: "Isabel", pickups: [{ name: "Casey", location: "PHL", day: "Thu, Jul 30", time: "TBD" }] },
+  { name: "Isabel's car", people: "Isabel, Kait, Taylor, and picking up Casey", leave: "9:00 AM", arrive: "3:30 PM", driver: "Isabel", pickups: [{ name: "Casey", time: "12:00 PM" }] },
 ];
 
 const DEFAULT_HOUSE = {
@@ -1832,34 +1832,60 @@ function DetailsTab({
             <h3 className="font-display text-2xl text-foreground">
               <em className="text-[var(--gold)]">Your ride</em>
             </h3>
-            <p className="mt-3 text-sm font-medium text-foreground">{car.name}</p>
-            <p className="text-xs text-muted-foreground">
-              Leave by {car.leave} · Estimated Arrival {car.arrive}
-            </p>
             {(() => {
-              const segments = car.people.split(",").map((p) => p.trim().replace(/^and\s+/i, ""));
-              const pickupNames = segments.filter((p) => /picking up/i.test(p)).map((p) => p.replace(/^picking up\s+/i, "").trim());
-              const regularNames = segments.filter((p) => !/picking up/i.test(p) && p !== car.driver && p !== sg);
-              const pickupsForSentence = pickupNames.filter((n) => n !== sg);
               const driver = car.driver ?? "";
+              const pickups = car.pickups ?? [];
+              const myPickup = pickups.find((p) => p.name === sg);
+              const segments = car.people.split(",").map((p) => p.trim().replace(/^and\s+/i, ""));
+              const pickupNames = pickups.map((p) => p.name);
+              const regularPassengers = segments.filter((p) => !/picking up/i.test(p) && p !== driver);
+
+              // helper: join names naturally "A and B" or "A, B and C"
+              const joinNames = (names: string[]) => {
+                if (names.length === 0) return "";
+                if (names.length === 1) return names[0];
+                return names.slice(0, -1).join(", ") + " and " + names[names.length - 1];
+              };
+
+              // DRIVER
               if (car.driver === sg) {
-                const allOthers = [...regularNames, ...pickupNames];
-                if (allOthers.length === 0) return null;
-                const last = allOthers[allOthers.length - 1];
-                const rest = allOthers.slice(0, -1);
-                const list = rest.length > 0 ? `${rest.join(", ")}, and ${last}` : last;
-                return <p className="mt-2 text-xs text-muted-foreground">You're driving {list}</p>;
+                const others = regularPassengers.filter((p) => p !== sg);
+                const sentence = pickupNames.length > 0
+                  ? `You are driving ${joinNames(others)} then picking up ${joinNames(pickupNames)} on the way`
+                  : `You are driving ${joinNames(others)}`;
+                return (
+                  <>
+                    <p className="mt-3 text-sm font-medium text-foreground">Your car</p>
+                    <p className="text-xs text-muted-foreground">Leave by {car.leave} · Estimated Arrival {car.arrive}</p>
+                    <p className="mt-2 text-xs text-muted-foreground">{sentence}</p>
+                  </>
+                );
               }
-              const others = regularNames;
-              if (pickupsForSentence.length > 0) {
-                const othersPart = others.length > 0 ? `${others.join(", ")}, ` : "";
-                return <p className="mt-2 text-xs text-muted-foreground">{driver} is driving you, {othersPart}and picking up {pickupsForSentence.join(" and ")} on the way</p>;
+
+              // PICKUP PASSENGER
+              if (myPickup) {
+                const others = regularPassengers.filter((p) => p !== sg);
+                return (
+                  <>
+                    <p className="mt-3 text-sm font-medium text-foreground">{car.name}</p>
+                    <p className="text-xs text-muted-foreground">Pick-up at {myPickup.time} · Estimated Arrival {car.arrive}</p>
+                    <p className="mt-2 text-xs text-muted-foreground">{driver} is driving {joinNames(others)} then picking you up on the way</p>
+                  </>
+                );
               }
-              if (others.length === 0) return <p className="mt-2 text-xs text-muted-foreground">{driver} is driving you</p>;
-              const last = others[others.length - 1];
-              const rest = others.slice(0, -1);
-              const list = rest.length > 0 ? `${rest.join(", ")}, and ${last}` : last;
-              return <p className="mt-2 text-xs text-muted-foreground">{driver} is driving you and {list}</p>;
+
+              // REGULAR PASSENGER
+              const others = regularPassengers.filter((p) => p !== sg);
+              const sentence = pickupNames.length > 0
+                ? `${driver} is driving you and ${joinNames(others)} then picking up ${joinNames(pickupNames)} on the way`
+                : `${driver} is driving you and ${joinNames(others)}`;
+              return (
+                <>
+                  <p className="mt-3 text-sm font-medium text-foreground">{car.name}</p>
+                  <p className="text-xs text-muted-foreground">Leave by {car.leave} · Estimated Arrival {car.arrive}</p>
+                  <p className="mt-2 text-xs text-muted-foreground">{sentence}</p>
+                </>
+              );
             })()}
           </section>
         )}
