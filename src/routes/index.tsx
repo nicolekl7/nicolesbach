@@ -47,15 +47,6 @@ const INITIAL_PAID: PaidMap = Object.fromEntries(
 
 type Claim = { name: Name; note?: string };
 
-type GroceryStore = "Grocery Store" | "Costco";
-type GroceryItem = {
-  id: string;
-  name: string;
-  store: GroceryStore;
-  amount?: string;
-  addedBy: Name;
-};
-
 type Item = {
   id: string;
   label: string;
@@ -270,7 +261,7 @@ const INITIAL_EXPENSES: Expense[] = [
     note: "Split 10 ways (Taylor not included).",
   },
   {
-    label: "Boat — Octolounge Kraken",
+    label: "Boat — Octolounge Kraken · $85 - NOT DUE YET",
     total: 800,
     payer: "Sabrina",
     perPerson: 80,
@@ -313,7 +304,7 @@ export default function BachelorettePage() {
   };
   const [claims, setClaims] = useState<Record<string, Claim[]>>(INITIAL_CLAIMS);
   const [activitySignups, setActivitySignups] = useState<Record<string, Name[]>>({});
-  const [tab, setTab] = useState<"details" | "itinerary" | "signup" | "grocery" | "vibes" | "payments">("details");
+  const [tab, setTab] = useState<"details" | "itinerary" | "signup" | "vibes" | "payments">("details");
   const [formFor, setFormFor] = useState<string | null>(null);
   const [pendingItemId, setPendingItemId] = useState<string | null>(null);
   const [showNamePicker, setShowNamePicker] = useState(false);
@@ -326,11 +317,6 @@ export default function BachelorettePage() {
   const [addItemNote, setAddItemNote] = useState("");
   const [paid, setPaid] = useState<PaidMap>(INITIAL_PAID);
   const [expenses, setExpenses] = useState<Expense[]>(INITIAL_EXPENSES);
-  const [groceryList, setGroceryList] = useState<GroceryItem[]>([]);
-  const [showAddGrocery, setShowAddGrocery] = useState(false);
-  const [groceryItemName, setGroceryItemName] = useState("");
-  const [groceryStore, setGroceryStore] = useState<GroceryStore>("Grocery Store");
-  const [groceryAmount, setGroceryAmount] = useState("");
 
   // Admin state
   const [adminMode, setAdminMode] = useState(false);
@@ -370,7 +356,6 @@ export default function BachelorettePage() {
       }
       if (data.expenses) setExpenses(data.expenses as Expense[]);
       if (data.activitySignups) setActivitySignups(data.activitySignups as Record<string, Name[]>);
-      if (data.groceryList) setGroceryList(data.groceryList as GroceryItem[]);
     }).catch(() => {});
   }, []);
 
@@ -382,7 +367,7 @@ export default function BachelorettePage() {
       await saveContent({
         data: {
           password: "nyler",
-          content: { themes, sections, itinerary, cars, houseInfo, claims, paid, expenses, activitySignups, groceryList },
+          content: { themes, sections, itinerary, cars, houseInfo, claims, paid, expenses, activitySignups },
         },
       });
       toast.success("Saved!");
@@ -398,7 +383,7 @@ export default function BachelorettePage() {
     saveContent({
       data: {
         password: "nyler",
-        content: { themes, sections, itinerary, cars, houseInfo, claims: nextClaims, paid, expenses, activitySignups, groceryList },
+        content: { themes, sections, itinerary, cars, houseInfo, claims: nextClaims, paid, expenses, activitySignups },
       },
     }).catch((err) => console.error("Auto-save claims failed:", err));
   };
@@ -408,7 +393,7 @@ export default function BachelorettePage() {
     saveContent({
       data: {
         password: "nyler",
-        content: { themes, sections, itinerary, cars, houseInfo, claims, paid, expenses: nextExpenses, activitySignups, groceryList },
+        content: { themes, sections, itinerary, cars, houseInfo, claims, paid, expenses: nextExpenses, activitySignups },
       },
     }).catch((err) => console.error("Auto-save expenses failed:", err));
   };
@@ -422,7 +407,7 @@ export default function BachelorettePage() {
     saveContent({
       data: {
         password: "nyler",
-        content: { themes, sections, itinerary, cars, houseInfo, claims, paid: nextPaid, expenses, activitySignups, groceryList },
+        content: { themes, sections, itinerary, cars, houseInfo, claims, paid: nextPaid, expenses, activitySignups },
       },
     }).catch((err) => console.error("Auto-save paid failed:", err));
   };
@@ -435,45 +420,9 @@ export default function BachelorettePage() {
     saveContent({
       data: {
         password: "nyler",
-        content: { themes, sections, itinerary, cars, houseInfo, claims, paid, expenses, activitySignups: nextSignups, groceryList },
+        content: { themes, sections, itinerary, cars, houseInfo, claims, paid, expenses, activitySignups: nextSignups },
       },
     }).catch((err) => console.error("Auto-save activity failed:", err));
-  };
-
-  const addGroceryItem = () => {
-    if (!groceryItemName.trim()) return;
-    if (!user) { setShowNamePicker(true); return; }
-    const item: GroceryItem = {
-      id: `grocery-${Date.now()}`,
-      name: groceryItemName.trim(),
-      store: groceryStore,
-      amount: groceryAmount.trim() || undefined,
-      addedBy: user as Name,
-    };
-    const next = [...groceryList, item];
-    setGroceryList(next);
-    saveContent({
-      data: {
-        password: "nyler",
-        content: { themes, sections, itinerary, cars, houseInfo, claims, paid, expenses, activitySignups, groceryList: next },
-      },
-    }).catch((err) => console.error("Auto-save grocery failed:", err));
-    setGroceryItemName("");
-    setGroceryStore("Grocery Store");
-    setGroceryAmount("");
-    setShowAddGrocery(false);
-    toast.success(`Added "${item.name}" to grocery list`);
-  };
-
-  const removeGroceryItem = (id: string) => {
-    const next = groceryList.filter((g) => g.id !== id);
-    setGroceryList(next);
-    saveContent({
-      data: {
-        password: "nyler",
-        content: { themes, sections, itinerary, cars, houseInfo, claims, paid, expenses, activitySignups, groceryList: next },
-      },
-    }).catch((err) => console.error("Auto-save grocery remove failed:", err));
   };
 
   const setThemesA = (v: Theme[]) => setThemes(v);
@@ -605,7 +554,7 @@ export default function BachelorettePage() {
     saveContent({
       data: {
         password: "nyler",
-        content: { themes, sections: nextSections, itinerary, cars, houseInfo, claims: nextClaims, paid, expenses, activitySignups, groceryList },
+        content: { themes, sections: nextSections, itinerary, cars, houseInfo, claims: nextClaims, paid, expenses, activitySignups },
       },
     }).catch((err) => console.error("Auto-save custom item failed:", err));
     setShowAddItem(false);
@@ -842,9 +791,6 @@ export default function BachelorettePage() {
           <TabBtn active={tab === "signup"} onClick={() => setTab("signup")}>
             Item signup
           </TabBtn>
-          <TabBtn active={tab === "grocery"} onClick={() => setTab("grocery")}>
-            Grocery List
-          </TabBtn>
           {adminMode && (
             <TabBtn active={tab === "payments"} onClick={() => setTab("payments")}>
               Payments
@@ -1003,116 +949,6 @@ export default function BachelorettePage() {
           </>
         )}
         {tab === "who" && <WhoTab claims={claims} user={user} sections={sections} />}
-        {tab === "grocery" && (
-          <div className="space-y-4">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-              <h2 className="font-display text-3xl text-foreground sm:text-4xl">
-                <em className="text-[var(--gold)]">Grocery List</em>
-              </h2>
-              <button
-                onClick={() => {
-                  if (!user) { setShowNamePicker(true); return; }
-                  setShowAddGrocery(true);
-                }}
-                className="inline-flex items-center gap-1.5 rounded-md border border-[var(--gold)]/40 bg-[#fef9dd] px-3 py-2 text-xs uppercase tracking-wider text-[var(--gold)] hover:bg-[var(--gold)]/10"
-              >
-                + Add item
-              </button>
-            </div>
-
-            {/* Add item form */}
-            {showAddGrocery && (
-              <div className="rounded-lg border border-border bg-card p-5 space-y-4">
-                <p className="text-sm font-medium text-foreground">New grocery item</p>
-                <input
-                  type="text"
-                  placeholder="Item name"
-                  value={groceryItemName}
-                  onChange={(e) => setGroceryItemName(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && addGroceryItem()}
-                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-[var(--gold)] focus:outline-none"
-                />
-                <div className="flex gap-2">
-                  {(["Grocery Store", "Costco"] as GroceryStore[]).map((s) => (
-                    <button
-                      key={s}
-                      onClick={() => setGroceryStore(s)}
-                      className={`rounded-full px-3 py-1 text-xs uppercase tracking-wider border transition ${groceryStore === s ? "bg-[var(--gold)] text-white border-[var(--gold)]" : "border-border text-muted-foreground hover:border-[var(--gold)] hover:text-[var(--gold)]"}`}
-                    >
-                      {s}
-                    </button>
-                  ))}
-                </div>
-                <input
-                  type="text"
-                  placeholder="Amount (optional)"
-                  value={groceryAmount}
-                  onChange={(e) => setGroceryAmount(e.target.value)}
-                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-[var(--gold)] focus:outline-none"
-                />
-                <div className="flex gap-2 pt-1">
-                  <button
-                    onClick={addGroceryItem}
-                    className="rounded-md bg-[var(--gold)] px-4 py-2 text-xs uppercase tracking-wider text-white hover:opacity-90"
-                  >
-                    Add
-                  </button>
-                  <button
-                    onClick={() => { setShowAddGrocery(false); setGroceryItemName(""); setGroceryAmount(""); }}
-                    className="rounded-md border border-border px-4 py-2 text-xs uppercase tracking-wider text-muted-foreground hover:border-[var(--gold)] hover:text-[var(--gold)]"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Group by store */}
-            {(["Grocery Store", "Costco"] as GroceryStore[]).map((store) => {
-              const items = groceryList.filter((g) => g.store === store);
-              if (items.length === 0) return null;
-              return (
-                <section key={store} className="rounded-lg border border-border bg-card overflow-hidden">
-                  <div className="flex items-center gap-3 bg-[#fef9dd] px-5 py-4">
-                    <h3 className="font-display text-2xl text-[var(--gold)] sm:text-3xl">
-                      <em>{store}</em>
-                    </h3>
-                    <span className="text-xs uppercase tracking-wider text-muted-foreground">{items.length} item{items.length !== 1 ? "s" : ""}</span>
-                  </div>
-                  <ul className="divide-y divide-border">
-                    {items.map((g) => (
-                      <li key={g.id} className="flex items-center gap-3 px-5 py-3">
-                        <div className="flex-1 min-w-0">
-                          <span className="text-sm text-foreground font-medium">{g.name}</span>
-                          {g.amount && (
-                            <span className="ml-2 text-xs text-muted-foreground">· {g.amount}</span>
-                          )}
-                          <span className="ml-2 text-xs text-muted-foreground opacity-70">added by {g.addedBy}</span>
-                        </div>
-                        {(adminMode || g.addedBy === user) && (
-                          <button
-                            onClick={() => removeGroceryItem(g.id)}
-                            className="shrink-0 text-xs text-muted-foreground hover:text-red-500 transition"
-                            title="Remove"
-                          >
-                            ✕
-                          </button>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                </section>
-              );
-            })}
-
-            {groceryList.length === 0 && !showAddGrocery && (
-              <div className="rounded-lg border border-dashed border-border bg-card p-10 text-center text-sm text-muted-foreground">
-                No items yet — be the first to add something!
-              </div>
-            )}
-          </div>
-        )}
         {tab === "vibes" && (
           <VibesTab
             themes={themes}
