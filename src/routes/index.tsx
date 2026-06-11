@@ -1657,7 +1657,7 @@ function DetailsTab({
         )}
 
         <div className="text-center">
-          <h2 className="font-display text-5xl text-[var(--gold)] sm:text-6xl">{sg}</h2>
+          <h2 className="font-display inline-block rounded-2xl bg-[#fef9dd] px-8 py-4 text-4xl text-[var(--gold)] sm:text-5xl">{sg}</h2>
         </div>
 
         {car && (
