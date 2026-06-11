@@ -354,7 +354,17 @@ export default function BachelorettePage() {
       if (!data) return;
       if (data.themes) setThemes(data.themes as Theme[]);
       if (data.sections) setSections(data.sections as Section[]);
-      if (data.itinerary) setItinerary(data.itinerary as ItinDay[]);
+      if (data.itinerary) {
+        const kvItin = data.itinerary as ItinDay[];
+        const merged = DEFAULT_ITINERARY.map((defaultDay) => {
+          const kvDay = kvItin.find((d) => d.date === defaultDay.date);
+          if (!kvDay) return defaultDay;
+          const visibleBlocks = defaultDay.blocks.filter((b) => b.visibleTo);
+          const kvBlocksWithoutVisible = kvDay.blocks.filter((b) => !(b as ItinBlock).visibleTo);
+          return { ...kvDay, blocks: [...kvBlocksWithoutVisible, ...visibleBlocks] };
+        });
+        setItinerary(merged);
+      }
       if (data.cars) setCars(data.cars as typeof DEFAULT_CARS);
       if (data.houseInfo) setHouseInfo(data.houseInfo as typeof DEFAULT_HOUSE);
       if (data.claims) setClaims(data.claims as Record<string, Claim[]>);
