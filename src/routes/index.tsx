@@ -261,12 +261,12 @@ const INITIAL_EXPENSES: Expense[] = [
     note: "Split 10 ways (Taylor not included).",
   },
   {
-    label: "Boat — Octolounge Kraken · $85 - NOT DUE YET",
+    label: "Boat — Octolounge Kraken",
     total: 800,
     payer: "Sabrina",
-    perPerson: 80,
+    perPerson: 85,
     splitAmong: [...NAMES],
-    note: "$100 deposit paid 4/7. Split 10 ways.",
+    note: "$85 due to Sabrina",
   },
 ];
 
