@@ -155,7 +155,7 @@ const DEFAULT_ITINERARY: ItinDay[] = [
     date: "Thu, Jul 30",
     label: "Thursday",
     blocks: [
-      { time: "12:00 PM", what: "Pickup @ PHL", visibleTo: ["Casey", "Isabel", "Kait", "Taylor"] },
+      { time: "12:00 PM", what: "Casey lands at PHL - Isabel's car picks up", visibleTo: ["Casey", "Isabel", "Kait", "Taylor"] },
       { time: "TBD", what: "Char gets into Wilmington station - Sabrina's car picks up", visibleTo: ["Char", "Sabrina", "Phoebe", "Jane"] },
       { time: "4:00 PM", what: "Official check in" },
       { time: "5:00 PM", what: "Decorating" },
