@@ -365,7 +365,12 @@ export default function BachelorettePage() {
         });
         setItinerary(merged);
       }
-      if (data.cars) setCars(data.cars as typeof DEFAULT_CARS);
+      if (data.cars) {
+        const kvCars = data.cars as typeof DEFAULT_CARS;
+        const merged = DEFAULT_CARS.map((dc) => kvCars.find((c) => c.name === dc.name) ?? dc);
+        const extra = kvCars.filter((c) => !DEFAULT_CARS.some((dc) => dc.name === c.name));
+        setCars([...merged, ...extra]);
+      }
       if (data.houseInfo) setHouseInfo(data.houseInfo as typeof DEFAULT_HOUSE);
       if (data.claims) setClaims(data.claims as Record<string, Claim[]>);
       if (data.paid) {
