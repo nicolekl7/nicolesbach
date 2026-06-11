@@ -45,7 +45,7 @@ const INITIAL_PAID: PaidMap = Object.fromEntries(
   NAMES.map((n) => [n, { "House": "paid", "Boat — Octolounge Kraken": "not-due" }])
 ) as PaidMap;
 
-type Claim = { name: Name; note?: string };
+type Claim = { name: Name; note?: string; label?: string };
 
 type GroceryStore = "Grocery Store" | "Costco";
 type GroceryItem = {
@@ -611,6 +611,7 @@ export default function BachelorettePage() {
     setSectionsA(nextSections);
     const additions: Claim[] = Array.from({ length: addItemQty }, () => ({
       name: user as Name,
+      label: addItemName.trim(),
       ...(addItemNote.trim() ? { note: addItemNote.trim() } : {}),
     }));
     const nextClaims = { ...claims, [id]: additions };
@@ -1812,7 +1813,7 @@ function DetailsTab({
     }
     const allItems = sections.flatMap((s) => s.items);
     const allClaimedItems = Object.entries(itemCounts).map(([itemId, { count, note }]) => ({
-      label: allItems.find((i) => i.id === itemId)?.label ?? itemId,
+      label: allItems.find((i) => i.id === itemId)?.label ?? (claims[itemId] ?? [])[0]?.label ?? itemId,
       count,
       note,
     }));
