@@ -398,7 +398,7 @@ export default function BachelorettePage() {
     saveContent({
       data: {
         password: "nyler",
-        content: { themes, sections, itinerary, cars, houseInfo, claims: nextClaims, paid, expenses },
+        content: { themes, sections, itinerary, cars, houseInfo, claims: nextClaims, paid, expenses, activitySignups, groceryList },
       },
     }).catch((err) => console.error("Auto-save claims failed:", err));
   };
@@ -408,7 +408,7 @@ export default function BachelorettePage() {
     saveContent({
       data: {
         password: "nyler",
-        content: { themes, sections, itinerary, cars, houseInfo, claims, paid, expenses: nextExpenses },
+        content: { themes, sections, itinerary, cars, houseInfo, claims, paid, expenses: nextExpenses, activitySignups, groceryList },
       },
     }).catch((err) => console.error("Auto-save expenses failed:", err));
   };
@@ -422,7 +422,7 @@ export default function BachelorettePage() {
     saveContent({
       data: {
         password: "nyler",
-        content: { themes, sections, itinerary, cars, houseInfo, claims, paid: nextPaid, expenses },
+        content: { themes, sections, itinerary, cars, houseInfo, claims, paid: nextPaid, expenses, activitySignups, groceryList },
       },
     }).catch((err) => console.error("Auto-save paid failed:", err));
   };
@@ -605,7 +605,7 @@ export default function BachelorettePage() {
     saveContent({
       data: {
         password: "nyler",
-        content: { themes, sections: nextSections, itinerary, cars, houseInfo, claims: nextClaims, paid, expenses },
+        content: { themes, sections: nextSections, itinerary, cars, houseInfo, claims: nextClaims, paid, expenses, activitySignups, groceryList },
       },
     }).catch((err) => console.error("Auto-save custom item failed:", err));
     setShowAddItem(false);
