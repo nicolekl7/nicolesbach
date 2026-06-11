@@ -1830,33 +1830,34 @@ function DetailsTab({
             <h3 className="font-display text-2xl text-foreground">
               <em className="text-[var(--gold)]">Your ride</em>
             </h3>
-            <p className="mt-3 text-sm font-medium text-foreground">{car.name}{car.driver === sg ? <span className="ml-2 text-xs font-normal text-[var(--gold-soft)]">· you're driving</span> : car.driver ? <span className="ml-2 text-xs font-normal text-muted-foreground">· {car.driver} driving</span> : null}</p>
+            <p className="mt-3 text-sm font-medium text-foreground">{car.name}</p>
             <p className="text-xs text-muted-foreground">
-              Leave {car.leave} · Arrive {car.arrive}
+              Leave by {car.leave} · Estimated Arrival {car.arrive}
             </p>
             {(() => {
-              const others = car.people.split(",").map((p) => p.trim()).filter((p) => p !== sg && !p.startsWith(sg));
-              const label = car.driver === sg ? "Your car has" : "With";
-              return others.length > 0 ? <p className="mt-2 text-xs text-muted-foreground">{label} {others.join(", ")}</p> : null;
-            })()}
-            {(() => {
-              const myPickup = (car.pickups ?? []).find((p) => p.name === sg);
-              if (!myPickup) return null;
-              return (
-                <div className="mt-3 rounded-md border border-[var(--gold)]/30 bg-[#fef9dd] px-3 py-2">
-                  <p className="text-xs font-medium text-[var(--gold)]">📍 Pickup: {myPickup.location}</p>
-                  <p className="text-xs text-muted-foreground">{myPickup.day}{myPickup.time !== "TBD" ? ` · ${myPickup.time}` : " · time TBD"}</p>
-                </div>
-              );
-            })()}
-            {(() => {
-              const otherPickups = (car.pickups ?? []).filter((p) => p.name !== sg);
-              if (otherPickups.length === 0 || car.driver !== sg) return null;
-              return (
-                <p className="mt-2 text-xs text-muted-foreground">
-                  Picking up: {otherPickups.map((p) => `${p.name} @ ${p.location}`).join(", ")}
-                </p>
-              );
+              const segments = car.people.split(",").map((p) => p.trim());
+              const pickupNames = segments.filter((p) => /picking up/i.test(p)).map((p) => p.replace(/^and\s+picking up\s+/i, "").replace(/^picking up\s+/i, "").trim());
+              const regularNames = segments.filter((p) => !/picking up/i.test(p) && p !== car.driver && p !== sg);
+              const pickupsForSentence = pickupNames.filter((n) => n !== sg);
+              const driver = car.driver ?? "";
+              if (car.driver === sg) {
+                const allOthers = [...regularNames, ...pickupNames];
+                if (allOthers.length === 0) return null;
+                const last = allOthers[allOthers.length - 1];
+                const rest = allOthers.slice(0, -1);
+                const list = rest.length > 0 ? `${rest.join(", ")}, and ${last}` : last;
+                return <p className="mt-2 text-xs text-muted-foreground">You're driving {list}</p>;
+              }
+              const others = regularNames;
+              if (pickupsForSentence.length > 0) {
+                const othersPart = others.length > 0 ? `${others.join(", ")}, ` : "";
+                return <p className="mt-2 text-xs text-muted-foreground">{driver} is driving you, {othersPart}and picking up {pickupsForSentence.join(" and ")} on the way</p>;
+              }
+              if (others.length === 0) return <p className="mt-2 text-xs text-muted-foreground">{driver} is driving you</p>;
+              const last = others[others.length - 1];
+              const rest = others.slice(0, -1);
+              const list = rest.length > 0 ? `${rest.join(", ")}, and ${last}` : last;
+              return <p className="mt-2 text-xs text-muted-foreground">{driver} is driving you and {list}</p>;
             })()}
           </section>
         )}
