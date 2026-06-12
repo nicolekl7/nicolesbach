@@ -349,7 +349,6 @@ export default function BachelorettePage() {
       if (!data) return;
       if (data.themes) setThemes(data.themes as Theme[]);
       if (data.sections) setSections(data.sections as Section[]);
-      if (data.itinerary) setItinerary(data.itinerary as ItinDay[]);
       if (data.cars) setCars(data.cars as typeof DEFAULT_CARS);
       if (data.houseInfo) setHouseInfo(data.houseInfo as typeof DEFAULT_HOUSE);
       if (data.claims) setClaims(data.claims as Record<string, Claim[]>);
@@ -379,7 +378,7 @@ export default function BachelorettePage() {
       await saveContent({
         data: {
           password: "nyler",
-          content: { themes, sections, itinerary, cars, houseInfo, claims, paid, expenses, activitySignups },
+          content: { themes, sections, cars, houseInfo, claims, paid, expenses, activitySignups },
         },
       });
       toast.success("Saved!");
@@ -395,7 +394,7 @@ export default function BachelorettePage() {
     saveContent({
       data: {
         password: "nyler",
-        content: { themes, sections, itinerary, cars, houseInfo, claims: nextClaims, paid, expenses, activitySignups },
+        content: { themes, sections, cars, houseInfo, claims: nextClaims, paid, expenses, activitySignups },
       },
     }).catch((err) => console.error("Auto-save claims failed:", err));
   };
@@ -405,7 +404,7 @@ export default function BachelorettePage() {
     saveContent({
       data: {
         password: "nyler",
-        content: { themes, sections, itinerary, cars, houseInfo, claims, paid, expenses: nextExpenses, activitySignups },
+        content: { themes, sections, cars, houseInfo, claims, paid, expenses: nextExpenses, activitySignups },
       },
     }).catch((err) => console.error("Auto-save expenses failed:", err));
   };
@@ -419,7 +418,7 @@ export default function BachelorettePage() {
     saveContent({
       data: {
         password: "nyler",
-        content: { themes, sections, itinerary, cars, houseInfo, claims, paid: nextPaid, expenses, activitySignups },
+        content: { themes, sections, cars, houseInfo, claims, paid: nextPaid, expenses, activitySignups },
       },
     }).catch((err) => console.error("Auto-save paid failed:", err));
   };
@@ -432,7 +431,7 @@ export default function BachelorettePage() {
     saveContent({
       data: {
         password: "nyler",
-        content: { themes, sections, itinerary, cars, houseInfo, claims, paid, expenses, activitySignups: nextSignups },
+        content: { themes, sections, cars, houseInfo, claims, paid, expenses, activitySignups: nextSignups },
       },
     }).catch((err) => console.error("Auto-save activity failed:", err));
   };
@@ -566,7 +565,7 @@ export default function BachelorettePage() {
     saveContent({
       data: {
         password: "nyler",
-        content: { themes, sections: nextSections, itinerary, cars, houseInfo, claims: nextClaims, paid, expenses, activitySignups },
+        content: { themes, sections: nextSections, cars, houseInfo, claims: nextClaims, paid, expenses, activitySignups },
       },
     }).catch((err) => console.error("Auto-save custom item failed:", err));
     setShowAddItem(false);
@@ -1592,7 +1591,7 @@ function DetailsTab({
   setCars,
   houseInfo,
   setHouseInfo,
-  itinerary,
+ 
   setItinerary,
   sections,
   onGoToVibes,
@@ -2001,7 +2000,7 @@ function DetailsTab({
 // ---------- Itinerary ----------
 
 function ItineraryTab({
-  itinerary,
+ 
   setItinerary,
   onGoToVibes,
   user,
