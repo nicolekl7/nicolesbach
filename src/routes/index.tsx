@@ -343,7 +343,7 @@ export default function BachelorettePage() {
   const [cars, setCars] = useState(DEFAULT_CARS);
   const [houseInfo, setHouseInfo] = useState(DEFAULT_HOUSE);
   // always-current ref so auto-save closures don't use stale state
-  const latestRef = useRef({ themes, sections, cars, houseInfo, claims, paid, expenses, activitySignups });
+  const latestRef = useRef({ themes, sections, itinerary, cars, houseInfo, claims, paid, expenses, activitySignups });
 
   // Load shared content from KV on mount
   useEffect(() => {
@@ -351,6 +351,7 @@ export default function BachelorettePage() {
       if (!data) return;
       if (data.themes) setThemes(data.themes as Theme[]);
       if (data.sections) setSections((data.sections as Section[]).filter((s) => !/grocery/i.test(s.title)));
+      if (data.itinerary) setItinerary(data.itinerary as ItinDay[]);
       if (data.cars) setCars(data.cars as typeof DEFAULT_CARS);
       if (data.houseInfo) setHouseInfo(data.houseInfo as typeof DEFAULT_HOUSE);
       if (data.claims) setClaims(data.claims as Record<string, Claim[]>);
@@ -374,19 +375,17 @@ export default function BachelorettePage() {
 
   // keep ref in sync so save closures always have fresh values
   useEffect(() => {
-    latestRef.current = { themes, sections, cars, houseInfo, claims, paid, expenses, activitySignups };
+    latestRef.current = { themes, sections, itinerary, cars, houseInfo, claims, paid, expenses, activitySignups };
   });
 
   const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
+    if (autoSaveTimer.current) { clearTimeout(autoSaveTimer.current); autoSaveTimer.current = null; }
     setSaving(true);
     try {
       await saveContent({
-        data: {
-          password: "nyler",
-          content: { themes, sections, cars, houseInfo, claims, paid, expenses, activitySignups },
-        },
+        data: { password: "nyler", content: latestRef.current },
       });
       toast.success("Saved!");
     } catch (err) {
@@ -443,14 +442,18 @@ export default function BachelorettePage() {
     }).catch((err) => console.error("Auto-save activity failed:", err));
   };
 
+  const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const autoSave = (patch: Partial<typeof latestRef.current>) => {
-    const c = { ...latestRef.current, ...patch };
-    saveContent({ data: { password: "nyler", content: c } })
-      .catch((err) => console.error("Auto-save failed:", err));
+    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+    autoSaveTimer.current = setTimeout(() => {
+      const c = { ...latestRef.current, ...patch };
+      saveContent({ data: { password: "nyler", content: c } })
+        .catch((err) => toast.error("Save failed — " + (err instanceof Error ? err.message : String(err))));
+    }, 600);
   };
   const setThemesA = (v: Theme[]) => { setThemes(v); autoSave({ themes: v }); };
   const setSectionsA = (v: Section[]) => { setSections(v); autoSave({ sections: v }); };
-  const setItineraryA = (v: ItinDay[]) => setItinerary(v);
+  const setItineraryA = (v: ItinDay[]) => { setItinerary(v); autoSave({ itinerary: v }); };
   const setCarsA = (v: typeof DEFAULT_CARS) => { setCars(v); autoSave({ cars: v }); };
   const setHouseInfoA = (v: typeof DEFAULT_HOUSE) => { setHouseInfo(v); autoSave({ houseInfo: v }); };
 
