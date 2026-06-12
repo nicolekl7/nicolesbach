@@ -2425,7 +2425,7 @@ function SpendTab({
                       {expenses.map((e) => {
                         const inSplit = (e.splitAmong ?? []).includes(n);
                         const status: PayStatus = activePaid[n]?.[e.label] ?? "owed";
-                        const canToggle = isAdmin;
+                        const canToggle = true;
                         if (!inSplit) {
                           return (
                             <td key={e.label} className="border-b border-border px-2 py-2 text-center text-muted-foreground/40">—</td>
@@ -2478,7 +2478,7 @@ function SpendTab({
                   <ul className="mt-2 space-y-1.5">
                     {userExpenses.map((e) => {
                       const status: PayStatus = activePaid[n]?.[e.label] ?? "owed";
-                      const canToggle = isAdmin || n === user;
+                      const canToggle = true;
                       return (
                         <li key={e.label} className="flex items-center justify-between text-sm">
                           <span className="text-muted-foreground">
