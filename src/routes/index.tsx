@@ -150,7 +150,7 @@ const DEFAULT_ITINERARY: ItinDay[] = [
       { time: "4:00 PM", what: "Official check in & Decorating" },
       { time: "4:15 PM", what: "Decorating & Grocery run" },
       { time: "5:30 PM", what: "Get ready - THEME: TEQUILA SUNRISE" },
-      { time: "7:00 PM", what: "Dinner in Rehobeth" },
+      { time: "7:00 PM", what: "Dinner in Rehoboth" },
       { time: "9:00 PM", what: "Games at the house….or maybe go out" },
     ],
   },
