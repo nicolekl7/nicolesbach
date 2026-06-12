@@ -145,19 +145,27 @@ const DEFAULT_ITINERARY: ItinDay[] = [
     date: "Thu, Jul 30",
     label: "Thursday",
     blocks: [
-      { time: "4:00 PM", what: "Official check in" },
-      { time: "5:00 PM", what: "Decorating" },
-      { time: "7:00 PM", what: "Sunset theme · dinner out" },
+      { time: "12:00 PM", what: "Casey lands at PHL - Isabel's car picks up", visibleTo: ["Casey", "Isabel", "Kait", "Taylor"] },
+      { time: "1:00 PM / TBD", what: "Char gets into Wilmington station - Sabrina's car picks up", visibleTo: ["Char", "Sabrina", "Phoebe", "Jane"] },
+      { time: "4:00 PM", what: "Official check in & Decorating" },
+      { time: "4:15 PM", what: "Decorating & Grocery run" },
+      { time: "5:30 PM", what: "Get ready - THEME: TEQUILA SUNRISE" },
+      { time: "7:00 PM", what: "Dinner in Rehobeth" },
+      { time: "9:00 PM", what: "Games at the house….or maybe go out" },
     ],
   },
   {
     date: "Fri, Jul 31",
     label: "Friday",
     blocks: [
-      { time: "8:00 AM", what: "Pickleball (optional)" },
-      { time: "9:00 AM", what: "Beach day" },
-      { time: "7:00 PM", what: "Glitter theme" },
-      { time: "8:00 PM", what: "Pregame games" },
+      { time: "8:30 AM", what: "Pickleball (optional)" },
+      { time: "9:45 AM", what: "Early birds head to beach to set up" },
+      { time: "11:00 AM", what: "Sleepy heads join at beach" },
+      { time: "1:00 PM", what: "Lunch TBD but beachy" },
+      { time: "4:00 PM", what: "Head back to the house" },
+      { time: "6:00 PM", what: "Get ready - THEME: BLING BEFORE THE RING" },
+      { time: "6:30 PM", what: "Dinner delivered to the house" },
+      { time: "7:30 PM", what: "Pregame games" },
       { time: "9:00 PM", what: "Out on the town" },
     ],
   },
@@ -166,10 +174,9 @@ const DEFAULT_ITINERARY: ItinDay[] = [
     label: "Saturday",
     blocks: [
       { time: "10:00 AM", what: "Brunch + shops in Rehoboth" },
-      { time: "1:00 PM", what: "Back to bnb · Tini Bikinis boat theme" },
-      { time: "2:30 PM", what: "Walk to boat" },
-      { time: "3:00 PM", what: "Boat" },
-      { time: "6:00 PM", what: "Bonfire" },
+      { time: "1:00 PM", what: "Get ready - THEME: TINIS & BIKINIS" },
+      { time: "2:30 PM", what: "Boat trip" },
+      { time: "6:00 PM", what: "Straight off the boat into bonfire" },
       { time: "9:00 PM", what: "Games & pjs" },
     ],
   },
@@ -177,8 +184,13 @@ const DEFAULT_ITINERARY: ItinDay[] = [
     date: "Sun, Aug 2",
     label: "Sunday",
     blocks: [
-      { time: "10:00 AM", what: "Checkout · bye-bye brunch" },
+      { time: "9:00 AM", what: "Pack up and clean" },
+      { time: "10:00 AM", what: "Checkout" },
+      { time: "10:30 AM", what: "Bye-bye brunch" },
       { time: "12:00 PM", what: "Phoebe / Taylor / Casey need to go" },
+      { time: "6:10 PM", what: "LGA — Phoebe's flight", visibleTo: ["Phoebe"] },
+      { time: "6:50 PM", what: "LGA — Taylor's flight", visibleTo: ["Taylor"] },
+      { time: "8:15 PM", what: "LGA — Casey's flight", visibleTo: ["Casey"] },
     ],
   },
 ];
@@ -337,7 +349,17 @@ export default function BachelorettePage() {
       if (!data) return;
       if (data.themes) setThemes(data.themes as Theme[]);
       if (data.sections) setSections(data.sections as Section[]);
-      if (data.itinerary) setItinerary(data.itinerary as ItinDay[]);
+      if (data.itinerary) {
+        const kvItin = data.itinerary as ItinDay[];
+        const merged = DEFAULT_ITINERARY.map((defaultDay) => {
+          const kvDay = kvItin.find((d) => d.date === defaultDay.date);
+          if (!kvDay) return defaultDay;
+          const pinnedBlocks = defaultDay.blocks.filter((b) => b.visibleTo);
+          const kvBlocks = kvDay.blocks.filter((b) => !(b as ItinBlock).visibleTo);
+          return { ...kvDay, blocks: [...kvBlocks, ...pinnedBlocks] };
+        });
+        setItinerary(merged);
+      }
       if (data.cars) setCars(data.cars as typeof DEFAULT_CARS);
       if (data.houseInfo) setHouseInfo(data.houseInfo as typeof DEFAULT_HOUSE);
       if (data.claims) setClaims(data.claims as Record<string, Claim[]>);
