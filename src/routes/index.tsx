@@ -2000,7 +2000,7 @@ function DetailsTab({
 // ---------- Itinerary ----------
 
 function ItineraryTab({
- 
+  itinerary,
   setItinerary,
   onGoToVibes,
   user,
