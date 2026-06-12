@@ -2355,7 +2355,7 @@ function SpendTab({
 
   return (
     <div className="space-y-8">
-      <section className="rounded-lg border border-border bg-card p-6">
+      <section className="rounded-lg border border-border bg-[#fef9dd] p-6">
         <div className="flex flex-wrap items-baseline justify-between gap-3">
           <h2 className="font-display text-3xl text-foreground sm:text-4xl">
             <em className="text-[var(--gold)]">Payments</em>
@@ -2432,20 +2432,20 @@ function SpendTab({
                             {isAdmin ? (
                               <button
                                 onClick={() => onToggle(n, e.label)}
-                                className={`inline-flex h-6 w-6 cursor-pointer items-center justify-center rounded border text-xs transition hover:border-[var(--gold)] ${
-                                  status === "paid" ? "border-green-700/50 bg-green-900/30 text-green-400" :
-                                  status === "not-due" ? "border-amber-700/50 bg-amber-900/20 text-amber-400" :
-                                  "border-border bg-background/30 text-muted-foreground"
+                                className={`inline-flex h-6 w-6 cursor-pointer items-center justify-center rounded border text-xs font-bold transition hover:opacity-80 ${
+                                  status === "paid" ? "border-green-600 bg-green-500 text-white" :
+                                  status === "not-due" ? "border-amber-500 bg-amber-400 text-amber-900" :
+                                  "border-red-400 bg-red-100 text-red-600"
                                 }`}
                                 title={status}
                               >
-                                {status === "paid" ? "✓" : status === "not-due" ? "–" : ""}
+                                {status === "paid" ? "✓" : status === "not-due" ? "–" : "·"}
                               </button>
                             ) : (
-                              <span className={`text-[10px] font-medium ${
-                                status === "paid" ? "text-green-400" :
-                                status === "not-due" ? "text-amber-400" :
-                                "text-muted-foreground"
+                              <span className={`text-sm font-bold ${
+                                status === "paid" ? "text-green-600" :
+                                status === "not-due" ? "text-amber-600" :
+                                "text-red-500"
                               }`}>
                                 {status === "paid" ? "✓" : status === "not-due" ? "–" : "·"}
                               </span>
