@@ -1636,23 +1636,13 @@ function DetailsTab({
   const activeGirl = lockedToUser ? (user as Name) : (selectedGirl ?? (user !== "" ? user as Name : null));
   const adminMode = !!setCars;
 
+  const sg = activeGirl ?? ("" as Name);
+  const car = activeGirl ? cars.find((c) =>
+    (c.people ?? "").split(",").map((p) => p.trim()).some((p) => p === sg || p.includes(sg)) ||
+    c.driver === sg
+  ) : undefined;
+  const itemCounts: Record<string, { count: number; note?: string }> = {};
   if (activeGirl) {
-    const sg = activeGirl;
-    const car = cars.find((c) =>
-      (c.people ?? "").split(",").map((p) => p.trim()).some((p) => p === sg || p.includes(sg)) ||
-      c.driver === sg
-    );
-    const items: { label: string; note?: string }[] = [];
-    for (const section of ([] as Section[])) {
-      for (const item of section.items) {
-        const list = claims[item.id] ?? [];
-        for (const c of list) {
-          if (c.name === sg) items.push({ label: item.label, note: c.note });
-        }
-      }
-    }
-    // Re-derive items from claims directly, grouped by label with count
-    const itemCounts: Record<string, { count: number; note?: string }> = {};
     for (const [itemId, claimList] of Object.entries(claims)) {
       for (const c of (claimList ?? [])) {
         if (c.name === sg) {
@@ -1661,31 +1651,25 @@ function DetailsTab({
         }
       }
     }
-    const allItems = sections.flatMap((s) => s.items);
-    const allClaimedItems = Object.entries(itemCounts)
-      .filter(([itemId]) => allItems.some((i) => i.id === itemId))
-      .map(([itemId, { count, note }]) => ({
-        label: allItems.find((i) => i.id === itemId)?.label ?? itemId,
-        count,
-        note,
-      }));
-    const defaultAllItems = DEFAULT_SECTIONS.flatMap((s) => s.items);
-    const byoItems = defaultAllItems.filter((i) => i.qty === "byo");
-    const userExpenses = expenses.filter((e) => (e.splitAmong ?? []).includes(sg));
-    const earlyLeavers = ["Phoebe", "Taylor", "Casey"];
-    const leavesEarly = earlyLeavers.includes(sg);
+  }
+  const allItems = sections.flatMap((s) => s.items);
+  const allClaimedItems = Object.entries(itemCounts)
+    .filter(([itemId]) => allItems.some((i) => i.id === itemId))
+    .map(([itemId, { count, note }]) => ({
+      label: allItems.find((i) => i.id === itemId)?.label ?? itemId,
+      count,
+      note,
+    }));
+  const defaultAllItems = DEFAULT_SECTIONS.flatMap((s) => s.items);
+  const byoItems = defaultAllItems.filter((i) => i.qty === "byo");
+  const userExpenses = activeGirl ? expenses.filter((e) => (e.splitAmong ?? []).includes(sg)) : [];
+  const earlyLeavers = ["Phoebe", "Taylor", "Casey"];
+  const leavesEarly = activeGirl ? earlyLeavers.includes(sg) : false;
 
-    return (
-      <div className="space-y-8">
-        {!lockedToUser && activeGirl !== user && (
-          <button
-            onClick={() => setSelectedGirl(null)}
-            className="inline-flex items-center gap-1.5 rounded-md border border-border bg-[#fef9dd] px-3 py-2 text-xs uppercase tracking-wider text-foreground transition hover:border-[var(--gold)] hover:text-[var(--gold)]"
-          >
-            ← Back to details
-          </button>
-        )}
-
+  return (
+    <div className="space-y-8">
+      {activeGirl && (
+        <>
         <div className="text-center">
           <h2 className="font-display inline-block rounded-2xl bg-[#fef9dd] px-8 py-4 text-4xl text-[var(--gold)] sm:text-5xl">{sg}</h2>
         </div>
@@ -1854,12 +1838,9 @@ function DetailsTab({
             </div>
           )}
         </section>
-      </div>
-    );
-  }
+        </>
+      )}
 
-  return (
-    <div className="space-y-8">
       <section className="rounded-lg border border-border bg-card p-6">
         <h2 className="font-display text-3xl text-foreground sm:text-4xl">
           <em className="text-[var(--gold)]">The house</em>
@@ -1917,15 +1898,22 @@ function DetailsTab({
           <em className="text-[var(--gold)]">The girls</em>
         </h2>
         <div className="mt-5 flex flex-wrap gap-2">
-          {NAMES.map((n) => (
-            <button
-              key={n}
-              onClick={() => onSelectGirl?.(n)}
-              className="rounded-full border border-border bg-background/30 px-3 py-1.5 text-sm text-foreground transition hover:border-[var(--gold)] hover:text-[var(--gold)]"
-            >
-              {n}
-            </button>
-          ))}
+          {NAMES.map((n) => {
+            const isActive = n === activeGirl;
+            return (
+              <button
+                key={n}
+                onClick={() => onSelectGirl?.(n)}
+                className={`rounded-full border px-3 py-1.5 text-sm transition ${
+                  isActive
+                    ? "border-[var(--gold)] bg-[var(--gold)] text-[var(--olive-deep)] font-semibold"
+                    : "border-border bg-background/30 text-foreground hover:border-[var(--gold)] hover:text-[var(--gold)]"
+                }`}
+              >
+                {n}
+              </button>
+            );
+          })}
         </div>
       </section>
 
