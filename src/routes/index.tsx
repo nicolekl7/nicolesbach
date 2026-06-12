@@ -974,6 +974,19 @@ export default function BachelorettePage() {
             expenses={expenses}
             setExpenses={saveExpenses}
             onToggle={togglePaid}
+            onBulkSetStatus={(label, statusMap) => {
+              const nextPaid = { ...paid };
+              for (const [name, status] of Object.entries(statusMap) as [Name, PayStatus][]) {
+                nextPaid[name] = { ...nextPaid[name], [label]: status };
+              }
+              setPaid(nextPaid);
+              saveContent({
+                data: {
+                  password: "nyler",
+                  content: { themes, sections, cars, houseInfo, claims, paid: nextPaid, expenses, activitySignups },
+                },
+              }).catch((err) => console.error("Auto-save paid failed:", err));
+            }}
           />
         )}
       </main>
@@ -2258,12 +2271,14 @@ function SpendTab({
   paid,
   user,
   onToggle,
+  onBulkSetStatus,
   expenses,
   setExpenses,
 }: {
   paid: PaidMap;
   user: Name | "";
   onToggle: (name: Name, label: string) => void;
+  onBulkSetStatus: (label: string, statusMap: Partial<Record<Name, PayStatus>>) => void;
   expenses: Expense[];
   setExpenses: (e: Expense[]) => void;
 }) {
@@ -2275,8 +2290,12 @@ function SpendTab({
   const [newTotal, setNewTotal] = useState(0);
   const [newPayer, setNewPayer] = useState<Name>(ADMIN);
   const [newSplit, setNewSplit] = useState<Name[]>([...NAMES]);
+  const [newStatus, setNewStatus] = useState<PayStatus>("not-due");
+  const [newPaidGirls, setNewPaidGirls] = useState<Name[]>([]);
   const [editingLabel, setEditingLabel] = useState<string | null>(null);
   const [editFields, setEditFields] = useState<Partial<Expense>>({});
+  const [editStatus, setEditStatus] = useState<PayStatus>("not-due");
+  const [editPaidGirls, setEditPaidGirls] = useState<Name[]>([]);
 
   const totalRequired = NAMES.reduce(
     (sum, n) => sum + expenses.filter((e) => e.splitAmong.includes(n)).length,
@@ -2299,7 +2318,7 @@ function SpendTab({
       toast.error("That label already exists");
       return;
     }
-    setExpenses([
+    const newExpenses = [
       ...expenses,
       {
         label,
@@ -2308,12 +2327,24 @@ function SpendTab({
         perPerson: Math.round((newTotal / newSplit.length) * 100) / 100,
         splitAmong: newSplit,
       },
-    ]);
+    ];
+    setExpenses(newExpenses);
+    // apply status to all girls in split
+    const statusMap: Partial<Record<Name, PayStatus>> = {};
+    for (const n of newSplit) {
+      if (newStatus === "owed") {
+        statusMap[n] = newPaidGirls.includes(n) ? "paid" : "owed";
+      } else {
+        statusMap[n] = newStatus;
+      }
+    }
+    onBulkSetStatus(label, statusMap);
     setAdding(false);
     setNewLabel("");
     setNewTotal(0);
     setNewSplit([...NAMES]);
-    setNewDueDate("");
+    setNewStatus("not-due");
+    setNewPaidGirls([]);
     toast.success(`Added ${label}`);
   };
 
@@ -2572,6 +2603,51 @@ function SpendTab({
                 })}
               </div>
             </div>
+            <div>
+              <label className="mb-1 block text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                Status
+              </label>
+              <div className="flex gap-2">
+                {(["paid", "not-due", "owed"] as PayStatus[]).map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => setNewStatus(s)}
+                    className={`rounded-full border px-3 py-1 text-xs font-medium uppercase tracking-wider transition ${
+                      newStatus === s
+                        ? s === "paid" ? "border-green-600 bg-green-900/40 text-green-400" :
+                          s === "not-due" ? "border-zinc-500 bg-zinc-800/60 text-zinc-400" :
+                          "border-red-600 bg-red-900/30 text-red-400"
+                        : "border-border bg-background/30 text-muted-foreground"
+                    }`}
+                  >
+                    {s === "paid" ? "Paid" : s === "not-due" ? "Not Owed Yet" : "Unpaid"}
+                  </button>
+                ))}
+              </div>
+              {newStatus === "owed" && (
+                <div className="mt-2">
+                  <p className="mb-1 text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Who has paid?</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {newSplit.map((n) => {
+                      const isPaid = newPaidGirls.includes(n);
+                      return (
+                        <button
+                          key={n}
+                          type="button"
+                          onClick={() => setNewPaidGirls(isPaid ? newPaidGirls.filter((x) => x !== n) : [...newPaidGirls, n])}
+                          className={`rounded-full border px-2.5 py-1 text-xs transition ${
+                            isPaid ? "border-green-600 bg-green-900/30 text-green-400" : "border-red-700/50 bg-red-900/20 text-red-400"
+                          }`}
+                        >
+                          {n} {isPaid ? "✓" : "unpaid"}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
             <div className="flex gap-2">
               <button
                 onClick={addExpense}
@@ -2636,10 +2712,64 @@ function SpendTab({
                         })}
                       </div>
                     </div>
+                    <div>
+                      <label className="mb-1 block text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Status</label>
+                      <div className="flex gap-2">
+                        {(["paid", "not-due", "owed"] as PayStatus[]).map((s) => (
+                          <button
+                            key={s}
+                            type="button"
+                            onClick={() => setEditStatus(s)}
+                            className={`rounded-full border px-3 py-1 text-xs font-medium uppercase tracking-wider transition ${
+                              editStatus === s
+                                ? s === "paid" ? "border-green-600 bg-green-900/40 text-green-400" :
+                                  s === "not-due" ? "border-zinc-500 bg-zinc-800/60 text-zinc-400" :
+                                  "border-red-600 bg-red-900/30 text-red-400"
+                                : "border-border bg-background/30 text-muted-foreground"
+                            }`}
+                          >
+                            {s === "paid" ? "Paid" : s === "not-due" ? "Not Owed Yet" : "Unpaid"}
+                          </button>
+                        ))}
+                      </div>
+                      {editStatus === "owed" && (
+                        <div className="mt-2">
+                          <p className="mb-1 text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Who has paid?</p>
+                          <div className="flex flex-wrap gap-1.5">
+                            {editSplit.map((n) => {
+                              const isPaid = editPaidGirls.includes(n);
+                              return (
+                                <button
+                                  key={n}
+                                  type="button"
+                                  onClick={() => setEditPaidGirls(isPaid ? editPaidGirls.filter((x) => x !== n) : [...editPaidGirls, n])}
+                                  className={`rounded-full border px-2.5 py-1 text-xs transition ${
+                                    isPaid ? "border-green-600 bg-green-900/30 text-green-400" : "border-red-700/50 bg-red-900/20 text-red-400"
+                                  }`}
+                                >
+                                  {n} {isPaid ? "✓" : "unpaid"}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                     <div className="flex gap-2">
                       <button
                         onClick={() => {
-                          setExpenses(expenses.map((x) => x.label === e.label ? { ...e, ...ef, perPerson: editPerPerson } : x));
+                          const finalLabel = (ef.label ?? e.label).trim();
+                          setExpenses(expenses.map((x) => x.label === e.label ? { ...e, ...ef, label: finalLabel, perPerson: editPerPerson } : x));
+                          // apply status
+                          const statusMap: Partial<Record<Name, PayStatus>> = {};
+                          for (const n of editSplit) {
+                            if (editStatus === "owed") {
+                              statusMap[n] = editPaidGirls.includes(n) ? "paid" : "owed";
+                            } else {
+                              statusMap[n] = editStatus;
+                            }
+                          }
+                          onBulkSetStatus(finalLabel, statusMap);
                           setEditingLabel(null);
                           setEditFields({});
                         }}
@@ -2659,7 +2789,17 @@ function SpendTab({
                       </span>
                     </div>
                     <div className="flex shrink-0 gap-3">
-                      <button onClick={() => { setEditingLabel(e.label); setEditFields({}); }}
+                      <button onClick={() => {
+                        setEditingLabel(e.label);
+                        setEditFields({});
+                        // infer current status from paid map: if all paid→paid, if all not-due→not-due, else owed
+                        const statuses = e.splitAmong.map((n) => paid[n]?.[e.label] ?? "owed");
+                        const allPaid = statuses.every((s) => s === "paid");
+                        const allNotDue = statuses.every((s) => s === "not-due");
+                        const inferredStatus: PayStatus = allPaid ? "paid" : allNotDue ? "not-due" : "owed";
+                        setEditStatus(inferredStatus);
+                        setEditPaidGirls(inferredStatus === "owed" ? e.splitAmong.filter((n) => paid[n]?.[e.label] === "paid") : []);
+                      }}
                         className="text-xs text-muted-foreground hover:text-[var(--gold)]">Edit</button>
                       <button onClick={() => removeExpense(e.label)}
                         className="text-xs text-muted-foreground hover:text-red-400">Delete</button>
