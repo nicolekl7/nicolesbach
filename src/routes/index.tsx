@@ -1893,7 +1893,7 @@ function DetailsTab({
           {NAMES.map((n) => (
             <button
               key={n}
-              onClick={() => setSelectedGirl(n)}
+              onClick={() => { setUserPersisted(n); setSelectedGirl(n); }}
               className="rounded-full border border-border bg-background/30 px-3 py-1.5 text-sm text-foreground transition hover:border-[var(--gold)] hover:text-[var(--gold)]"
             >
               {n}
