@@ -342,6 +342,8 @@ export default function BachelorettePage() {
   const [itinerary, setItinerary] = useState<ItinDay[]>(DEFAULT_ITINERARY);
   const [cars, setCars] = useState(DEFAULT_CARS);
   const [houseInfo, setHouseInfo] = useState(DEFAULT_HOUSE);
+  // always-current ref so auto-save closures don't use stale state
+  const latestRef = useRef({ themes, sections, cars, houseInfo, claims, paid, expenses, activitySignups });
 
   // Load shared content from KV on mount
   useEffect(() => {
@@ -369,6 +371,11 @@ export default function BachelorettePage() {
       if (data.activitySignups) setActivitySignups(data.activitySignups as Record<string, Name[]>);
     }).catch(() => {});
   }, []);
+
+  // keep ref in sync so save closures always have fresh values
+  useEffect(() => {
+    latestRef.current = { themes, sections, cars, houseInfo, claims, paid, expenses, activitySignups };
+  });
 
   const [saving, setSaving] = useState(false);
 
@@ -436,27 +443,16 @@ export default function BachelorettePage() {
     }).catch((err) => console.error("Auto-save activity failed:", err));
   };
 
-  const setThemesA = (v: Theme[]) => {
-    setThemes(v);
-    saveContent({ data: { password: "nyler", content: { themes: v, sections, cars, houseInfo, claims, paid, expenses, activitySignups } } })
-      .catch((err) => console.error("Auto-save themes failed:", err));
+  const autoSave = (patch: Partial<typeof latestRef.current>) => {
+    const c = { ...latestRef.current, ...patch };
+    saveContent({ data: { password: "nyler", content: c } })
+      .catch((err) => console.error("Auto-save failed:", err));
   };
-  const setSectionsA = (v: Section[]) => {
-    setSections(v);
-    saveContent({ data: { password: "nyler", content: { themes, sections: v, cars, houseInfo, claims, paid, expenses, activitySignups } } })
-      .catch((err) => console.error("Auto-save sections failed:", err));
-  };
+  const setThemesA = (v: Theme[]) => { setThemes(v); autoSave({ themes: v }); };
+  const setSectionsA = (v: Section[]) => { setSections(v); autoSave({ sections: v }); };
   const setItineraryA = (v: ItinDay[]) => setItinerary(v);
-  const setCarsA = (v: typeof DEFAULT_CARS) => {
-    setCars(v);
-    saveContent({ data: { password: "nyler", content: { themes, sections, cars: v, houseInfo, claims, paid, expenses, activitySignups } } })
-      .catch((err) => console.error("Auto-save cars failed:", err));
-  };
-  const setHouseInfoA = (v: typeof DEFAULT_HOUSE) => {
-    setHouseInfo(v);
-    saveContent({ data: { password: "nyler", content: { themes, sections, cars, houseInfo: v, claims, paid, expenses, activitySignups } } })
-      .catch((err) => console.error("Auto-save houseInfo failed:", err));
-  };
+  const setCarsA = (v: typeof DEFAULT_CARS) => { setCars(v); autoSave({ cars: v }); };
+  const setHouseInfoA = (v: typeof DEFAULT_HOUSE) => { setHouseInfo(v); autoSave({ houseInfo: v }); };
 
   const allItems = useMemo(() => sections.flatMap((s) => s.items), [sections]);
   const finiteItems = useMemo(
