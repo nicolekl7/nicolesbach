@@ -1620,7 +1620,7 @@ function DetailsTab({
 }) {
   const [selectedGirl, setSelectedGirl] = useState<Name | null>(null);
   const lockedToUser = user !== "" && user !== ADMIN;
-  const activeGirl = lockedToUser ? (user as Name) : (selectedGirl ?? (user !== "" ? user as Name : null));
+  const activeGirl = selectedGirl ?? (lockedToUser ? (user as Name) : (user !== "" ? user as Name : null));
   const adminMode = !!setCars;
 
   if (activeGirl) {
@@ -1907,7 +1907,7 @@ function DetailsTab({
           {NAMES.map((n) => (
             <button
               key={n}
-              onClick={() => { onSelectGirl?.(n); setSelectedGirl(n); }}
+              onClick={() => setSelectedGirl(n)}
               className="rounded-full border border-border bg-background/30 px-3 py-1.5 text-sm text-foreground transition hover:border-[var(--gold)] hover:text-[var(--gold)]"
             >
               {n}
