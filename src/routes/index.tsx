@@ -828,6 +828,7 @@ export default function BachelorettePage() {
             onGoToSignup={() => setTab("signup")}
             activitySignups={activitySignups}
             onToggleActivity={toggleActivity}
+            onSelectGirl={setUserPersisted}
           />
         )}
         {tab === "itinerary" && (
@@ -1598,6 +1599,7 @@ function DetailsTab({
   onGoToSignup,
   activitySignups,
   onToggleActivity,
+  onSelectGirl,
 }: {
   claims: Record<string, Claim[]>;
   paid: PaidMap;
@@ -1614,6 +1616,7 @@ function DetailsTab({
   onGoToSignup?: () => void;
   activitySignups?: Record<string, Name[]>;
   onToggleActivity?: (key: string, name: Name) => void;
+  onSelectGirl?: (name: Name) => void;
 }) {
   const [selectedGirl, setSelectedGirl] = useState<Name | null>(null);
   const lockedToUser = user !== "" && user !== ADMIN;
@@ -1904,7 +1907,7 @@ function DetailsTab({
           {NAMES.map((n) => (
             <button
               key={n}
-              onClick={() => { setUserPersisted(n); setSelectedGirl(n); }}
+              onClick={() => { onSelectGirl?.(n); setSelectedGirl(n); }}
               className="rounded-full border border-border bg-background/30 px-3 py-1.5 text-sm text-foreground transition hover:border-[var(--gold)] hover:text-[var(--gold)]"
             >
               {n}
