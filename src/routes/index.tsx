@@ -1591,7 +1591,7 @@ function DetailsTab({
   setCars,
   houseInfo,
   setHouseInfo,
- 
+  itinerary,
   setItinerary,
   sections,
   onGoToVibes,
