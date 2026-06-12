@@ -2296,6 +2296,41 @@ function SpendTab({
   const [editFields, setEditFields] = useState<Partial<Expense>>({});
   const [editStatus, setEditStatus] = useState<PayStatus>("not-due");
   const [editPaidGirls, setEditPaidGirls] = useState<Name[]>([]);
+  const [pendingPaid, setPendingPaid] = useState<PaidMap | null>(null);
+  const activePaid = pendingPaid ?? paid;
+  const hasPendingChanges = pendingPaid !== null;
+
+  const toggleLocal = (n: Name, label: string) => {
+    const cycle: PayStatus[] = ["not-due", "owed", "paid"];
+    const current: PayStatus = activePaid[n]?.[label] ?? "owed";
+    const next = cycle[(cycle.indexOf(current) + 1) % cycle.length];
+    setPendingPaid({ ...activePaid, [n]: { ...activePaid[n], [label]: next } });
+  };
+
+  const saveAll = () => {
+    if (!pendingPaid) return;
+    const statusMap: Partial<Record<Name, PayStatus>> = {};
+    // diff and save each changed entry
+    for (const n of NAMES) {
+      for (const e of expenses) {
+        const prev = paid[n]?.[e.label];
+        const next = pendingPaid[n]?.[e.label];
+        if (next !== undefined && next !== prev) {
+          statusMap[n] = next; // will be overwritten per label below
+        }
+      }
+    }
+    // bulk save by calling onBulkSetStatus per expense label
+    for (const e of expenses) {
+      const map: Partial<Record<Name, PayStatus>> = {};
+      for (const n of e.splitAmong as Name[]) {
+        const next = pendingPaid[n]?.[e.label];
+        if (next !== undefined) map[n] = next;
+      }
+      if (Object.keys(map).length > 0) onBulkSetStatus(e.label, map);
+    }
+    setPendingPaid(null);
+  };
 
   const totalRequired = NAMES.reduce(
     (sum, n) => sum + expenses.filter((e) => e.splitAmong.includes(n)).length,
@@ -2304,7 +2339,7 @@ function SpendTab({
   const totalPaid = NAMES.reduce(
     (sum, n) =>
       sum +
-      expenses.filter((e) => e.splitAmong.includes(n) && paid[n]?.[e.label]).length,
+      expenses.filter((e) => e.splitAmong.includes(n) && activePaid[n]?.[e.label] === "paid").length,
     0,
   );
 
@@ -2383,12 +2418,22 @@ function SpendTab({
             </button>
           </div>
         </div>
-        <p className="mt-1 text-xs uppercase tracking-[0.2em] text-[var(--gold-soft)]">
-          {totalPaid} of {totalRequired} paid
-          <span className="ml-2 normal-case tracking-normal text-[var(--gold)]">
-            · tap any to toggle
-          </span>
-        </p>
+        <div className="mt-1 flex flex-wrap items-center justify-between gap-2">
+          <p className="text-xs uppercase tracking-[0.2em] text-[var(--gold-soft)]">
+            {totalPaid} of {totalRequired} paid
+            <span className="ml-2 normal-case tracking-normal text-[var(--gold)]">
+              · tap any to toggle
+            </span>
+          </p>
+          {hasPendingChanges && (
+            <button
+              onClick={saveAll}
+              className="rounded-md bg-[var(--gold)] px-3 py-1.5 text-xs uppercase tracking-wider text-[var(--olive-deep)] shadow"
+            >
+              Save changes
+            </button>
+          )}
+        </div>
 
         {view === "checklist" ? (
           <div className="mt-5 overflow-x-auto">
@@ -2421,7 +2466,8 @@ function SpendTab({
                       </td>
                       {expenses.map((e) => {
                         const inSplit = (e.splitAmong ?? []).includes(n);
-                        const status: PayStatus = paid[n]?.[e.label] ?? "owed";
+                        const status: PayStatus = activePaid[n]?.[e.label] ?? "owed";
+                        const canToggle = isAdmin || n === user;
                         if (!inSplit) {
                           return (
                             <td key={e.label} className="border-b border-border px-2 py-2 text-center text-muted-foreground/40">—</td>
@@ -2429,15 +2475,15 @@ function SpendTab({
                         }
                         return (
                           <td key={e.label} className="border-b border-border px-2 py-2 text-center">
-                            {isAdmin ? (
+                            {canToggle ? (
                               <button
-                                onClick={() => onToggle(n, e.label)}
+                                onClick={() => toggleLocal(n, e.label)}
                                 className={`inline-flex h-6 w-6 cursor-pointer items-center justify-center rounded border text-xs font-bold transition hover:opacity-80 ${
                                   status === "paid" ? "border-green-600 bg-green-500 text-white" :
                                   status === "not-due" ? "border-amber-500 bg-amber-400 text-amber-900" :
                                   "border-red-400 bg-red-100 text-red-600"
                                 }`}
-                                title={status}
+                                title={`${status} — click to cycle`}
                               >
                                 {status === "paid" ? "✓" : status === "not-due" ? "–" : "·"}
                               </button>
@@ -2473,29 +2519,30 @@ function SpendTab({
                   </div>
                   <ul className="mt-2 space-y-1.5">
                     {userExpenses.map((e) => {
-                      const status: PayStatus = paid[n]?.[e.label] ?? "owed";
+                      const status: PayStatus = activePaid[n]?.[e.label] ?? "owed";
+                      const canToggle = isAdmin || n === user;
                       return (
                         <li key={e.label} className="flex items-center justify-between text-sm">
                           <span className="text-muted-foreground">
                             {e.label}
                             <span className="ml-2 text-xs tabular-nums text-[var(--gold-soft)]">${e.perPerson}</span>
                           </span>
-                          {isAdmin ? (
+                          {canToggle ? (
                             <button
-                              onClick={() => onToggle(n, e.label)}
-                              className={`cursor-pointer rounded-full border px-3 py-1 text-xs font-medium uppercase tracking-wider transition hover:border-[var(--gold)] ${
-                                status === "paid" ? "border-green-700/40 bg-green-900/20 text-green-400" :
-                                status === "not-due" ? "border-amber-700/40 bg-amber-900/20 text-amber-400" :
-                                "border-border bg-background/30 text-muted-foreground"
+                              onClick={() => toggleLocal(n, e.label)}
+                              className={`cursor-pointer rounded-full border px-3 py-1 text-xs font-medium uppercase tracking-wider transition hover:opacity-80 ${
+                                status === "paid" ? "border-green-600 bg-green-500/20 text-green-700 font-bold" :
+                                status === "not-due" ? "border-amber-500 bg-amber-400/20 text-amber-700 font-bold" :
+                                "border-red-400 bg-red-100/40 text-red-600 font-bold"
                               }`}
                             >
                               {status === "paid" ? "Paid" : status === "not-due" ? "Not due yet" : "Owed"}
                             </button>
                           ) : (
                             <span className={`rounded-full border px-3 py-1 text-xs font-medium uppercase tracking-wider ${
-                              status === "paid" ? "border-green-700/40 bg-green-900/20 text-green-400" :
-                              status === "not-due" ? "border-amber-700/40 bg-amber-900/20 text-amber-400" :
-                              "border-border bg-background/30 text-muted-foreground"
+                              status === "paid" ? "border-green-600 bg-green-500/20 text-green-700" :
+                              status === "not-due" ? "border-amber-500 bg-amber-400/20 text-amber-700" :
+                              "border-red-400 bg-red-100/40 text-red-600"
                             }`}>
                               {status === "paid" ? "Paid" : status === "not-due" ? "Not due yet" : "Owed"}
                             </span>
