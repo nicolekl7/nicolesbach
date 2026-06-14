@@ -325,8 +325,9 @@ export default function BachelorettePage() {
   const [showAddItem, setShowAddItem] = useState(false);
   const [addItemName, setAddItemName] = useState("");
   const [addItemCategory, setAddItemCategory] = useState<"Bar" | "Beach" | "Kitchen" | "Home" | "Other">("Other");
-  const [addItemQty, setAddItemQty] = useState(1);
+  const [addItemQty, setAddItemQty] = useState<number | "unlimited">(1);
   const [addItemNote, setAddItemNote] = useState("");
+  const [addItemBringIt, setAddItemBringIt] = useState(false);
   const [paid, setPaid] = useState<PaidMap>(INITIAL_PAID);
   const [expenses, setExpenses] = useState<Expense[]>(INITIAL_EXPENSES);
 
@@ -572,12 +573,24 @@ export default function BachelorettePage() {
       };
     }
     setSectionsA(nextSections);
+    if (addItemBringIt) {
+      const additions: Claim[] = [{ name: user as Name }];
+      const nextClaims = { ...claims, [id]: additions };
+      setClaims(nextClaims);
+      saveContent({
+        data: {
+          password: "nyler",
+          content: { themes, sections: nextSections, cars, houseInfo, claims: nextClaims, paid, expenses, activitySignups },
+        },
+      }).catch((err) => console.error("Auto-save failed:", err));
+    }
     setShowAddItem(false);
     setAddItemName("");
     setAddItemCategory("Other");
     setAddItemQty(1);
     setAddItemNote("");
-    toast.success(`Added "${newItem.label}" to the list!`);
+    setAddItemBringIt(false);
+    toast.success(addItemBringIt ? `Added "${newItem.label}" and signed you up!` : `Added "${newItem.label}" to the list!`);
   };
 
   const handleAdminSubmit = () => {
@@ -680,13 +693,24 @@ export default function BachelorettePage() {
               </div>
               <div>
                 <label className="mb-1 block text-xs uppercase tracking-[0.2em] text-muted-foreground">Slots needed</label>
-                <input
-                  type="number"
-                  min={1}
-                  value={addItemQty}
-                  onChange={(e) => setAddItemQty(Math.max(1, parseInt(e.target.value) || 1))}
-                  className="w-24 rounded-md border border-border bg-input px-3 py-2 text-sm text-foreground outline-none focus:border-[var(--gold)]"
-                />
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setAddItemQty(addItemQty === "unlimited" ? 1 : "unlimited")}
+                    className={`rounded-full border px-3 py-1 text-xs transition ${addItemQty === "unlimited" ? "border-[var(--gold)] bg-[var(--gold)]/20 text-[var(--gold)]" : "border-border text-muted-foreground hover:border-[var(--gold)]/50"}`}
+                  >
+                    No limit
+                  </button>
+                  {addItemQty !== "unlimited" && (
+                    <input
+                      type="number"
+                      min={1}
+                      value={addItemQty}
+                      onChange={(e) => setAddItemQty(Math.max(1, parseInt(e.target.value) || 1))}
+                      className="w-20 rounded-md border border-border bg-input px-3 py-2 text-sm text-foreground outline-none focus:border-[var(--gold)]"
+                    />
+                  )}
+                </div>
               </div>
               <div>
                 <label className="mb-1 block text-xs uppercase tracking-[0.2em] text-muted-foreground">Hint (optional)</label>
@@ -696,6 +720,17 @@ export default function BachelorettePage() {
                   placeholder="Any details…"
                   className="w-full rounded-md border border-border bg-input px-3 py-2 text-sm text-foreground outline-none focus:border-[var(--gold)]"
                 />
+              </div>
+              <div>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={addItemBringIt}
+                    onChange={(e) => setAddItemBringIt(e.target.checked)}
+                    className="accent-[var(--gold)] h-4 w-4"
+                  />
+                  <span className="text-sm text-foreground">I'll bring it</span>
+                </label>
               </div>
             </div>
             <div className="mt-6 flex gap-3">
