@@ -156,7 +156,7 @@ const DEFAULT_ITINERARY: ItinDay[] = [
   },
   {
     date: "Fri, Jul 31",
-    label: "Friday",
+    label: "Friday (nk's bday!!!)",
     blocks: [
       { time: "8:30 AM", what: "Pickleball (optional)" },
       { time: "9:45 AM", what: "Early birds head to beach to set up" },
