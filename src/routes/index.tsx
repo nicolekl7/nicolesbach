@@ -237,7 +237,7 @@ const DEFAULT_THEMES: Theme[] = [
     id: "sat-boat",
     event: "Boat · Saturday",
     themeName: "Tini Bikinis",
-    description: "Green bathing suits & cover-ups. Matching energy encouraged.",
+    description: "Green bathing suits & cover-ups. Fun jewelry. Think beach clurrrrb. Brown is ok too if green is not working for you.",
     icon: "🍸",
     imageUrl: "",
   },
