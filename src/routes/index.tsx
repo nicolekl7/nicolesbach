@@ -2170,23 +2170,20 @@ function ItineraryTab({
                             {user && user !== "admin" && onToggleActivity && (
                               <button
                                 onClick={() => onToggleActivity(key, user as Name)}
-                                className={`rounded-full border px-2.5 py-1 text-[10px] uppercase tracking-wider transition ${isIn ? "border-[var(--gold)] bg-[var(--gold)]/10 text-[var(--gold-soft)]" : "border-border bg-background/30 text-muted-foreground hover:border-[var(--gold)] hover:text-[var(--gold)]"}`}
+                                className={`rounded-full px-3 py-1 text-[10px] uppercase tracking-wider font-semibold transition ${
+                                  isIn
+                                    ? "bg-green-600 text-white hover:bg-green-700"
+                                    : "bg-[var(--olive-deep)] text-[var(--gold)] border border-[var(--gold)]/50 hover:bg-[var(--gold)]/10"
+                                }`}
                               >
-                                {isIn ? "I'm in ✓" : "I'm in!"}
+                                {isIn ? "✓ I'm in" : "I'm in!"}
                               </button>
                             )}
                             {signedUp.length > 0 && (
-                              <div className="flex flex-wrap gap-1">
-                                {signedUp.map((n) => (
-                                  <span
-                                    key={n}
-                                    title={n}
-                                    className="flex h-6 w-6 items-center justify-center rounded-full border border-[var(--gold)]/40 bg-[var(--gold)]/10 text-[10px] font-medium text-[var(--gold-soft)]"
-                                  >
-                                    {n.slice(0, 2)}
-                                  </span>
-                                ))}
-                              </div>
+                              <span className="text-[10px] text-muted-foreground">
+                                <span className="mr-1 opacity-60">going:</span>
+                                {signedUp.map((n) => NICKNAMES[n] ?? n.toLowerCase()).join(", ")}
+                              </span>
                             )}
                           </div>
                         );
