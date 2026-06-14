@@ -84,6 +84,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:title", content: "Nicole's Bach 🥂" },
       { property: "og:description", content: "Dewey Beach · July 30 – Aug 2" },
       { property: "og:type", content: "website" },
+      { property: "og:image", content: "https://lh3.googleusercontent.com/d/1BsZYxyI9m9BUn0wscivBM1sIsEdOkRkp" },
+      { name: "twitter:image", content: "https://lh3.googleusercontent.com/d/1BsZYxyI9m9BUn0wscivBM1sIsEdOkRkp" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
       { name: "twitter:title", content: "Nicole's Bach 🥂" },
