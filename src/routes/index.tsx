@@ -949,6 +949,21 @@ export default function BachelorettePage() {
                     />
                   ))}
                 </ul>
+                <div className="px-5 py-3 border-t border-border/50">
+                  <button
+                    onClick={() => {
+                      if (!user) { setShowNamePicker(true); return; }
+                      const titleToCat: Record<string, typeof addItemCategory> = {
+                        Bar: "Bar", Beach: "Beach", Kitchen: "Kitchen", Home: "Home",
+                      };
+                      setAddItemCategory(titleToCat[section.title] ?? "Other");
+                      setShowAddItem(true);
+                    }}
+                    className="text-xs text-[var(--gold)] hover:opacity-70 uppercase tracking-wider"
+                  >
+                    + Add something
+                  </button>
+                </div>
               </section>
             ))}
 
