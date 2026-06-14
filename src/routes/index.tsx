@@ -567,19 +567,17 @@ export default function BachelorettePage() {
     const nextSections = sections.map((s, i) =>
       i === insertIdx ? { ...s, items: [...s.items, newItem] } : s
     );
-    setSectionsA(nextSections);
-    if (addItemBringIt) {
-      const additions: Claim[] = [{ name: user as Name }];
-      const nextClaims = { ...claims, [id]: additions };
-      setClaims(nextClaims);
-      // save sections + claims together so nothing races
-      saveContent({
-        data: {
-          password: "nyler",
-          content: { ...latestRef.current, sections: nextSections, claims: nextClaims },
-        },
-      }).catch((err) => toast.error("Save failed — " + (err instanceof Error ? err.message : String(err))));
-    }
+    setSections(nextSections);
+    const nextClaims = addItemBringIt
+      ? { ...claims, [id]: [{ name: user as Name }] as Claim[] }
+      : claims;
+    if (addItemBringIt) setClaims(nextClaims);
+    saveContent({
+      data: {
+        password: "nyler",
+        content: { ...latestRef.current, sections: nextSections, claims: nextClaims },
+      },
+    }).catch((err) => toast.error("Save failed — " + (err instanceof Error ? err.message : String(err))));
     setShowAddItem(false);
     setAddItemName("");
     setAddItemCategory("Other");
