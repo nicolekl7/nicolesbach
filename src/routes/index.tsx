@@ -1200,6 +1200,7 @@ function ItemRow({
           )}
           {claims.length > 0 && (
             <p className="mt-1.5 text-xs text-muted-foreground">
+              <span className="mr-1 opacity-60">Signed up:</span>
               {othersGrouped.map((g, i) => {
                 const uniqueNotes = [...new Set(g.notes)];
                 const notePart = uniqueNotes.length > 0 ? uniqueNotes.join(", ") : null;
