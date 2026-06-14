@@ -1611,6 +1611,12 @@ function AdminPackingList({
   );
 }
 
+const NICKNAMES: Record<string, string> = {
+  Sabrina: "sab", Jess: "jess", Kait: "kait", Isabel: "izzy",
+  Lara: "lar", Phoebe: "pheeb", Char: "char", Nicole: "nk",
+  Jane: "jane", Casey: "casey", Taylor: "tay",
+};
+
 function DetailsTab({
   claims,
   paid,
@@ -1816,35 +1822,28 @@ function DetailsTab({
                           ) : (
                             <span className="text-foreground">{b.what}</span>
                           )}
-                          {isOptional && (() => {
-                            const NICKNAMES: Record<string, string> = {
-                              Sabrina: "sab", Jess: "jess", Kait: "kait", Isabel: "izzy",
-                              Lara: "lar", Phoebe: "pheeb", Char: "char", Nicole: "nk",
-                              Jane: "jane", Casey: "casey", Taylor: "tay",
-                            };
-                            return (
-                              <div className="mt-1.5 flex flex-wrap items-center gap-2">
-                                {onToggleActivity && (
-                                  <button
-                                    onClick={() => onToggleActivity(key, sg)}
-                                    className={`rounded-full px-3 py-1 text-[10px] uppercase tracking-wider font-semibold transition ${
-                                      isIn
-                                        ? "bg-green-600 text-white hover:bg-green-700"
-                                        : "bg-[var(--olive-deep)] text-[var(--gold)] border border-[var(--gold)]/50 hover:bg-[var(--gold)]/10"
-                                    }`}
-                                  >
-                                    {isIn ? "✓ I'm in" : "I'm in!"}
-                                  </button>
-                                )}
-                                {signedUp.length > 0 && (
-                                  <span className="text-[10px] text-muted-foreground">
-                                    <span className="mr-1 opacity-60">going:</span>
-                                    {signedUp.map((n) => NICKNAMES[n] ?? n.toLowerCase()).join(", ")}
-                                  </span>
-                                )}
-                              </div>
-                            );
-                          })()}
+                          {isOptional && (
+                            <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                              {onToggleActivity && (
+                                <button
+                                  onClick={() => onToggleActivity(key, sg)}
+                                  className={`rounded-full px-3 py-1 text-[10px] uppercase tracking-wider font-semibold transition ${
+                                    isIn
+                                      ? "bg-green-600 text-white hover:bg-green-700"
+                                      : "bg-[var(--olive-deep)] text-[var(--gold)] border border-[var(--gold)]/50 hover:bg-[var(--gold)]/10"
+                                  }`}
+                                >
+                                  {isIn ? "✓ I'm in" : "I'm in!"}
+                                </button>
+                              )}
+                              {signedUp.length > 0 && (
+                                <span className="text-[10px] text-muted-foreground">
+                                  <span className="mr-1 opacity-60">going:</span>
+                                  {signedUp.map((n) => NICKNAMES[n] ?? n.toLowerCase()).join(", ")}
+                                </span>
+                              )}
+                            </div>
+                          )}
                         </div>
                       </li>
                     );
