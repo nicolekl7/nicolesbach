@@ -67,7 +67,6 @@ const DEFAULT_SECTIONS: Section[] = [
       { id: "bar-alcohol", label: "Alcohol", qty: "unlimited" },
       { id: "bar-mixers", label: "Mixers & syrups", qty: "unlimited" },
       { id: "bar-ice", label: "Bag ice", qty: "unlimited" },
-      { id: "bar-napkins", label: "Cocktail napkins", qty: 1 },
       { id: "bar-opener", label: "Bottle opener / wine key", qty: 1 },
     ],
   },
