@@ -52,6 +52,7 @@ type Item = {
   label: string;
   qty: number | "unlimited" | "byo";
   hint?: string;
+  addedBy?: Name;
 };
 
 type Section = { id: string; title: string; items: Item[] };
@@ -556,6 +557,7 @@ export default function BachelorettePage() {
       label: addItemName.trim(),
       qty: addItemQty,
       ...(addItemNote.trim() ? { hint: addItemNote.trim() } : {}),
+      addedBy: user as Name,
     };
     const nextSections = sections.map((s) => {
       if (targetId ? s.id === targetId : s === sections[sections.length - 1]) {
@@ -570,24 +572,12 @@ export default function BachelorettePage() {
       };
     }
     setSectionsA(nextSections);
-    const additions: Claim[] = Array.from({ length: addItemQty }, () => ({
-      name: user as Name,
-      ...(addItemNote.trim() ? { note: addItemNote.trim() } : {}),
-    }));
-    const nextClaims = { ...claims, [id]: additions };
-    setClaims(nextClaims);
-    saveContent({
-      data: {
-        password: "nyler",
-        content: { themes, sections: nextSections, cars, houseInfo, claims: nextClaims, paid, expenses, activitySignups },
-      },
-    }).catch((err) => console.error("Auto-save custom item failed:", err));
     setShowAddItem(false);
     setAddItemName("");
     setAddItemCategory("Other");
     setAddItemQty(1);
     setAddItemNote("");
-    toast.success(`Added "${newItem.label}" and signed you up!`);
+    toast.success(`Added "${newItem.label}" to the list!`);
   };
 
   const handleAdminSubmit = () => {
@@ -689,7 +679,7 @@ export default function BachelorettePage() {
                 </div>
               </div>
               <div>
-                <label className="mb-1 block text-xs uppercase tracking-[0.2em] text-muted-foreground"># bringing</label>
+                <label className="mb-1 block text-xs uppercase tracking-[0.2em] text-muted-foreground">Slots needed</label>
                 <input
                   type="number"
                   min={1}
@@ -699,7 +689,7 @@ export default function BachelorettePage() {
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs uppercase tracking-[0.2em] text-muted-foreground">Note (optional)</label>
+                <label className="mb-1 block text-xs uppercase tracking-[0.2em] text-muted-foreground">Hint (optional)</label>
                 <input
                   value={addItemNote}
                   onChange={(e) => setAddItemNote(e.target.value)}
@@ -714,7 +704,7 @@ export default function BachelorettePage() {
                 disabled={!addItemName.trim()}
                 className="flex-1 rounded-md bg-[var(--gold)] py-2 text-sm font-medium text-[var(--olive-deep)] transition hover:brightness-110 disabled:opacity-40"
               >
-                Add &amp; sign up
+                Add to list
               </button>
               <button
                 onClick={() => { setShowAddItem(false); setAddItemName(""); setAddItemNote(""); }}
@@ -1160,6 +1150,9 @@ function ItemRow({
             ✕
           </button>
         </div>
+        {item.addedBy && (
+          <p className="mt-1 text-[10px] text-muted-foreground/60">added by {item.addedBy}</p>
+        )}
       </li>
     );
   }
