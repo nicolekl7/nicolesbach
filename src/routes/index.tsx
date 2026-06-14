@@ -548,10 +548,14 @@ export default function BachelorettePage() {
   const submitAddItem = () => {
     if (!addItemName.trim()) return;
     if (!user) { setShowNamePicker(true); return; }
-    const catToSectionId: Record<string, string> = {
+    const catTitleKeyword: Record<string, string> = {
       Bar: "bar", Beach: "beach", Kitchen: "kitchen", Home: "house",
     };
-    const targetId = catToSectionId[addItemCategory];
+    const keyword = catTitleKeyword[addItemCategory]?.toLowerCase();
+    const targetIdx = keyword
+      ? sections.findIndex((s) => s.title.toLowerCase().includes(keyword) || s.id.toLowerCase().includes(keyword))
+      : sections.length - 1;
+    const insertIdx = targetIdx >= 0 ? targetIdx : sections.length - 1;
     const id = `custom-${Date.now()}`;
     const newItem: Item = {
       id,
@@ -560,29 +564,21 @@ export default function BachelorettePage() {
       ...(addItemNote.trim() ? { hint: addItemNote.trim() } : {}),
       addedBy: user as Name,
     };
-    const nextSections = sections.map((s) => {
-      if (targetId ? s.id === targetId : s === sections[sections.length - 1]) {
-        return { ...s, items: [...s.items, newItem] };
-      }
-      return s;
-    });
-    if (!targetId) {
-      nextSections[nextSections.length - 1] = {
-        ...nextSections[nextSections.length - 1],
-        items: [...nextSections[nextSections.length - 1].items, newItem],
-      };
-    }
+    const nextSections = sections.map((s, i) =>
+      i === insertIdx ? { ...s, items: [...s.items, newItem] } : s
+    );
     setSectionsA(nextSections);
     if (addItemBringIt) {
       const additions: Claim[] = [{ name: user as Name }];
       const nextClaims = { ...claims, [id]: additions };
       setClaims(nextClaims);
+      // save sections + claims together so nothing races
       saveContent({
         data: {
           password: "nyler",
-          content: { themes, sections: nextSections, cars, houseInfo, claims: nextClaims, paid, expenses, activitySignups },
+          content: { ...latestRef.current, sections: nextSections, claims: nextClaims },
         },
-      }).catch((err) => console.error("Auto-save failed:", err));
+      }).catch((err) => toast.error("Save failed — " + (err instanceof Error ? err.message : String(err))));
     }
     setShowAddItem(false);
     setAddItemName("");
