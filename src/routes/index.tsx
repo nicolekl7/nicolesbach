@@ -147,7 +147,7 @@ const DEFAULT_ITINERARY: ItinDay[] = [
     blocks: [
       { time: "12:00 PM", what: "Casey lands at PHL - Isabel's car picks up" },
       { time: "1:00 PM / TBD", what: "Char gets into Wilmington station - Sabrina's car picks up" },
-      { time: "4:00 PM", what: "Official check in & Decorating" },
+      { time: "4:00 PM", what: "Official check in" },
       { time: "4:15 PM", what: "Decorating & Grocery run" },
       { time: "5:30 PM", what: "Get ready - THEME: TEQUILA SUNRISE" },
       { time: "7:00 PM", what: "Dinner in Rehoboth" },
