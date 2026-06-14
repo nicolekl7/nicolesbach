@@ -187,7 +187,7 @@ const DEFAULT_ITINERARY: ItinDay[] = [
       { time: "9:00 AM", what: "Pack up and clean" },
       { time: "10:00 AM", what: "Checkout" },
       { time: "10:30 AM", what: "Bye-bye brunch" },
-      { time: "12:00 PM", what: "Phoebe / Taylor / Casey need to go" },
+      { time: "12:00 PM", what: "Phoebe & Taylor's car needs to go" },
       { time: "6:10 PM", what: "LGA — Phoebe's flight" },
       { time: "6:50 PM", what: "LGA — Taylor's flight" },
       { time: "8:15 PM", what: "LGA — Casey's flight" },
