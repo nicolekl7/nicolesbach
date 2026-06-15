@@ -474,7 +474,7 @@ export default function BachelorettePage() {
     return allItems.filter((i) => {
       const claimCount = claims[i.id]?.length ?? 0;
       if (typeof i.qty === "number") return claimCount < i.qty;
-      if (i.qty === "unlimited") return claimCount === 0;
+      if (i.qty === "unlimited" || i.qty === "byo") return claimCount === 0;
       return false;
     }).length;
   }, [allItems, claims]);
