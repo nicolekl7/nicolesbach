@@ -470,6 +470,14 @@ export default function BachelorettePage() {
     (i) => (claims[i.id]?.length ?? 0) > 0,
   ).length;
   const progress = Math.round((finiteWithSomeone / finiteItems.length) * 100);
+  const needsCovering = useMemo(() => {
+    return allItems.filter((i) => {
+      const claimCount = claims[i.id]?.length ?? 0;
+      if (typeof i.qty === "number") return claimCount < i.qty;
+      if (i.qty === "unlimited") return claimCount === 0;
+      return false;
+    }).length;
+  }, [allItems, claims]);
 
   const openForm = (item: Item) => {
     if (!user) {
@@ -881,10 +889,7 @@ export default function BachelorettePage() {
             <div className="mb-10 rounded-lg border border-border bg-card p-5">
               <div className="flex items-baseline justify-between">
                 <span className="font-display text-lg italic text-foreground">
-                  {finiteWithSomeone} of {finiteItems.length} items claimed
-                </span>
-                <span className="text-xs uppercase tracking-[0.2em] text-[var(--gold-soft)]">
-                  {finiteCovered} fully covered
+                  {needsCovering} {needsCovering === 1 ? "thing" : "things"} left to cover
                 </span>
               </div>
               <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-[var(--olive-deep)]">
