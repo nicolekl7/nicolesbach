@@ -394,7 +394,7 @@ export default function BachelorettePage() {
     saveContent({
       data: {
         password: "nyler",
-        content: { themes, sections, cars, houseInfo, claims: nextClaims, paid, expenses, activitySignups },
+        content: { ...latestRef.current, claims: nextClaims },
       },
     }).catch((err) => console.error("Auto-save claims failed:", err));
   };
@@ -404,7 +404,7 @@ export default function BachelorettePage() {
     saveContent({
       data: {
         password: "nyler",
-        content: { themes, sections, cars, houseInfo, claims, paid, expenses: nextExpenses, activitySignups },
+        content: { ...latestRef.current, expenses: nextExpenses },
       },
     }).catch((err) => console.error("Auto-save expenses failed:", err));
   };
@@ -418,7 +418,7 @@ export default function BachelorettePage() {
     saveContent({
       data: {
         password: "nyler",
-        content: { themes, sections, cars, houseInfo, claims, paid: nextPaid, expenses, activitySignups },
+        content: { ...latestRef.current, paid: nextPaid },
       },
     }).catch((err) => console.error("Auto-save paid failed:", err));
   };
@@ -431,7 +431,7 @@ export default function BachelorettePage() {
     saveContent({
       data: {
         password: "nyler",
-        content: { themes, sections, cars, houseInfo, claims, paid, expenses, activitySignups: nextSignups },
+        content: { ...latestRef.current, activitySignups: nextSignups },
       },
     }).catch((err) => console.error("Auto-save activity failed:", err));
   };
@@ -1029,7 +1029,7 @@ export default function BachelorettePage() {
               saveContent({
                 data: {
                   password: "nyler",
-                  content: { themes, sections, cars, houseInfo, claims, paid: nextPaid, expenses, activitySignups },
+                  content: { ...latestRef.current, paid: nextPaid },
                 },
               }).catch((err) => console.error("Auto-save paid failed:", err));
             }}
